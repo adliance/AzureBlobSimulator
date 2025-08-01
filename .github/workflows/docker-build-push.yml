@@ -1,0 +1,44 @@
+name: Adliance.AzureBlobSimulator
+
+env:
+  VERSION: 1.0.0.${{ github.run_number }}
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup .NET'
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+      - name: 'Run tests'
+        run: dotnet test --configuration Release
+
+  build_and_push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Login to GHCR'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Build'
+        run: |
+          docker build --tag ghcr.io/adliance/azureblobsimulator:latest --tag ghcr.io/adliance/azureblobsimulator:${{ env.VERSION }} --build-arg VERSION=${{ env.VERSION }} --file ./dockerfile .
+
+      - name: 'Publish'
+        run: |
+          docker push ghcr.io/adliance/azureblobsimulator:latest
+          docker push ghcr.io/adliance/azureblobsimulator:${{ env.VERSION }}

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+#
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adliance.AzureBlobSimulator", "src\Adliance.AzureBlobSimulator\Adliance.AzureBlobSimulator.csproj", "{94AF4640-39F3-45B0-80D7-B4E10746E63B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adliance.AzureBlobSimulator.Tests", "test\Adliance.AzureBlobSimulator.Tests\Adliance.AzureBlobSimulator.Tests.csproj", "{38867EAF-A4C4-4C69-B14F-F9CBA07D812C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F3A9EDE3-F084-4676-9063-B0A5F8DF4685}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		.gitignore = .gitignore
+		dockerfile = dockerfile
+		docker-build-push.yml = .github/workflows/docker-build-push.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{94AF4640-39F3-45B0-80D7-B4E10746E63B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94AF4640-39F3-45B0-80D7-B4E10746E63B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94AF4640-39F3-45B0-80D7-B4E10746E63B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94AF4640-39F3-45B0-80D7-B4E10746E63B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38867EAF-A4C4-4C69-B14F-F9CBA07D812C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38867EAF-A4C4-4C69-B14F-F9CBA07D812C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38867EAF-A4C4-4C69-B14F-F9CBA07D812C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38867EAF-A4C4-4C69-B14F-F9CBA07D812C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

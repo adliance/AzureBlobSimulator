@@ -1,0 +1,7 @@
+.idea
+bin
+obj
+*.user
+.DS_Store
+src/Adliance.AzureBlobSimulator/appsettings.Development.json
+.editorconfig
