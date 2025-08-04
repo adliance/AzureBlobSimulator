@@ -16,7 +16,7 @@ public abstract class ControllerTestBase : IClassFixture<WebApplicationFactory<P
 
     protected ControllerTestBase(WebApplicationFactory<Program> factory, string testStorageSubdirectory)
     {
-        TestStoragePath = Path.Combine("/Users/hannes/Downloads", testStorageSubdirectory);
+        TestStoragePath = Path.Combine("./unittests_storage", testStorageSubdirectory);
         StorageAccountName = "devstoreaccount1";
         StorageAccountKey = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
 
