@@ -11,8 +11,8 @@ public class StorageOptions
 
 public class StorageAccountOptions
 {
-    public required string AccountName { get; set; }
-    public required string AccountKey { get; set; }
+    public required string Name { get; set; }
+    public required string Key { get; set; }
 }
 
 public class ContainerOptions

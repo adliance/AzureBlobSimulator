@@ -97,12 +97,12 @@ public class AzureStorageAuthenticationMiddleware
             // Try all configured accounts for SAS validation
             foreach (var account in _storageAccounts)
             {
-                var stringToSign = BuildSasStringToSign(request, sv, se, sp, account.AccountName);
-                var expectedSignature = CalculateHmacSha256(stringToSign, account.AccountKey);
+                var stringToSign = BuildSasStringToSign(request, sv, se, sp, account.Name);
+                var expectedSignature = CalculateHmacSha256(stringToSign, account.Key);
 
                 if (sig == expectedSignature)
                 {
-                    _logger.LogDebug("SAS token validated successfully for account: {AccountName}", account.AccountName);
+                    _logger.LogDebug("SAS token validated successfully for account: {AccountName}", account.Name);
                     return true;
                 }
             }
@@ -132,7 +132,7 @@ public class AzureStorageAuthenticationMiddleware
             var providedSignature = parts[1];
 
             // Find matching account and validate
-            var matchingAccount = _storageAccounts.FirstOrDefault(a => a.AccountName == accountName);
+            var matchingAccount = _storageAccounts.FirstOrDefault(a => a.Name == accountName);
             if (matchingAccount == null)
             {
                 _logger.LogWarning("Unknown account name: {AccountName}", accountName);
@@ -141,7 +141,7 @@ public class AzureStorageAuthenticationMiddleware
 
             // Build string-to-sign
             var stringToSign = BuildSharedKeyStringToSign(request, accountName);
-            var expectedSignature = CalculateHmacSha256(stringToSign, matchingAccount.AccountKey);
+            var expectedSignature = CalculateHmacSha256(stringToSign, matchingAccount.Key);
 
             var result = providedSignature == expectedSignature;
             if (!result)
