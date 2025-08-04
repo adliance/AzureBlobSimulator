@@ -41,7 +41,7 @@ of the operations do not work with Azure Storage Explorer yet (primarily upload 
   
 - **Get Blob Properties** (`HEAD /{containerName}/{blobName}`)
   - Retrieves blob metadata without downloading content
-  - Returns Content-Length, Content-Type, Last-Modified, ETag
+  - Returns Content-Length, Content-Type, Last-Modified
 
 ### Authentication
 - **Shared Key Authentication**
