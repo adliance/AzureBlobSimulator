@@ -24,14 +24,12 @@ public abstract class ControllerTestBase : IClassFixture<WebApplicationFactory<P
         {
             builder.ConfigureAppConfiguration((_, config) =>
             {
+                config.Sources.Clear();
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Storage:LocalPath"] = TestStoragePath,
-                    ["Storage:Accounts:0:Name"] = Guid.NewGuid().ToString(),
-                    ["Storage:Accounts:0:Key"] = Guid.NewGuid().ToString(),
-                    ["Storage:Accounts:1:Name"] = StorageAccountName,
-                    ["Storage:Accounts:1:Key"] = StorageAccountKey
-                    // Intentionally no containers configuration to avoid system directory creation
+                    ["Storage:Accounts:0:Name"] = StorageAccountName,
+                    ["Storage:Accounts:0:Key"] = StorageAccountKey
                 });
             });
         });

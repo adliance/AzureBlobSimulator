@@ -141,40 +141,6 @@ public class BlobsController(IContainerPathResolver containerPathResolver) : Con
         }
     }
 
-    [HttpHead("{*blobName}")]
-    public IActionResult GetBlobProperties(string containerName, string blobName)
-    {
-        blobName = FixBlobNameThatContainsIdenticalDirectoryAndFileName(blobName);
-
-        try
-        {
-            var containerPath = containerPathResolver.GetContainerPath(containerName);
-            if (!Directory.Exists(containerPath)) return NotFound();
-
-            var fileInfo = new FileInfo(Path.Combine(containerPath, ConvertToFileSystemPath(blobName)));
-            if (!fileInfo.Exists) return NotFound();
-
-            var contentType = _contentTypeProvider.TryGetContentType(fileInfo.FullName, out var detectedContentType) ? detectedContentType : "application/octet-stream";
-            Response.Headers["x-ms-version"] = "2023-11-03";
-            Response.Headers["x-ms-blob-type"] = "BlockBlob";
-            Response.Headers["x-ms-lease-status"] = "unlocked";
-            Response.Headers["x-ms-lease-state"] = "available";
-            Response.Headers["Last-Modified"] = fileInfo.LastWriteTimeUtc.ToString("R");
-            Response.Headers["ETag"] = $"\"{Guid.NewGuid()}\"";
-            Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
-            Response.Headers["Content-Type"] = contentType;
-            Response.Headers["Accept-Ranges"] = "bytes";
-            Response.Headers["x-ms-server-encrypted"] = "false";
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return Problem($"Error getting blob properties: {ex.Message}");
-        }
-    }
-
-
 
     // I don't understand why, but the Azure storage explorer often sends requests with
     // filename.pdf/filename.pdf when uploading, instead of just filename.pdf
