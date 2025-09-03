@@ -13,7 +13,6 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
         var containerPath = Path.Combine(TestStoragePath, containerName);
         Directory.CreateDirectory(containerPath);
         await File.WriteAllBytesAsync(Path.Combine(containerPath, blobName), "Hello World!"u8.ToArray());
-        ;
 
         var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
         var blobClient = containerClient.GetBlobClient(blobName);
@@ -44,15 +43,7 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
     {
         var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
         var blobClient = containerClient.GetBlobClient("test-blob");
-        try
-        {
-            await blobClient.DownloadContentAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(404, ex.Status);
-        }
+        await CustomAssert.RequestError(404, () => blobClient.DownloadContentAsync());
     }
 
     [Fact]
@@ -60,15 +51,22 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
     {
         var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
         var blobClient = containerClient.GetBlobClient("test-blob");
-        try
-        {
-            await blobClient.GetPropertiesAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(404, ex.Status);
-            ;
-        }
+        await CustomAssert.RequestError(404, () => blobClient.GetPropertiesAsync());
+    }
+
+    [Fact]
+    public async Task Will_Get_400_when_Getting_Blob_with_Invalid_Name()
+    {
+        var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
+        var blobClient = containerClient.GetBlobClient("test/-blob");
+        await CustomAssert.RequestError(400, () => blobClient.GetPropertiesAsync());
+    }
+
+    [Fact]
+    public async Task Will_Get_400_when_Getting_Blob_in_Container_with_Invalid_Name()
+    {
+        var containerClient = BlobServiceClient.GetBlobContainerClient("_testcontainer");
+        var blobClient = containerClient.GetBlobClient("test-blob");
+        await CustomAssert.RequestError(400, () => blobClient.GetPropertiesAsync());
     }
 }

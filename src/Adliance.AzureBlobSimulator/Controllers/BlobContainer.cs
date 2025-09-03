@@ -1,14 +1,16 @@
 using System.Globalization;
+using Adliance.AzureBlobSimulator.Attributes;
 using Adliance.AzureBlobSimulator.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
 namespace Adliance.AzureBlobSimulator.Controllers;
 
+[ApiController]
 public class BlobContainer(ContainerService containerService) : ControllerBase
 {
     [HttpGet("/{container}/{*blob}")]
-    public IActionResult ReadBlob(string container, string blob)
+    public IActionResult ReadBlob([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
     {
         if (!containerService.DoesBlobExist(container, blob)) return NotFound($"Blob \"{container}/{blob}\" not found.");
 
@@ -29,7 +31,7 @@ public class BlobContainer(ContainerService containerService) : ControllerBase
     }
 
     [HttpHead("/{container}/{*blob}")]
-    public IActionResult GetBlobProperties(string container, string blob)
+    public IActionResult GetBlobProperties([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
     {
         if (!containerService.DoesBlobExist(container, blob)) return NotFound($"Blob \"{container}/{blob}\" not found.");
 

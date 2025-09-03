@@ -56,48 +56,28 @@ public class BlobsControllerTests(WebApplicationFactory<Program> factory) : Cont
     {
         const string containerName = "test-container";
         var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
-        try
-        {
-            await containerClient.GetPropertiesAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch
-        {
-            // OK, should fail
-        }
+        await CustomAssert.RequestError(404, () => containerClient.GetPropertiesAsync());
     }
-
 
     [Fact]
     public async Task Will_Get_404_when_Listing_Blobs_of_Container_that_does_not_Exist()
     {
         const string containerName = "test-container";
         var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
-        try
+
+        await CustomAssert.RequestError(404, async () =>
         {
-            await foreach (var b in containerClient.GetBlobsAsync())
+            await foreach (var _ in containerClient.GetBlobsAsync())
             {
-                Assert.Fail("Should have thrown.");
+               // do nothing here
             }
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(404, ex.Status);
-        }
+        });
     }
 
     [Fact]
     public async Task Will_Get_400_on_any_Unsupported_Request()
     {
-        try
-        {
-            var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
-            await containerClient.GetAccessPolicyAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(400, ex.Status);
-        }
+        var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
+        await CustomAssert.RequestError(400, () => containerClient.GetAccessPolicyAsync());
     }
 }

@@ -1,3 +1,4 @@
+using Adliance.AzureBlobSimulator.Attributes;
 using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace Adliance.AzureBlobSimulator.Controllers;
 public class BlobsController(ContainerService containerService) : ControllerBase
 {
     [HttpGet("/{container}")]
-    public IActionResult HandleGetRequest(string container, [FromQuery] string? comp, [FromQuery] string? restype)
+    public IActionResult HandleGetRequest([FromRoute, ContainerName] string container, [FromQuery] string? comp, [FromQuery] string? restype)
     {
         if (restype == "container" && comp == "list") return ListBlobs(container);
         if (restype == "container" && comp == null) return GetContainerProperties(container);
@@ -70,85 +71,3 @@ public class BlobsController(ContainerService containerService) : ControllerBase
         return Ok();
     }
 }
-
-/*
-[ApiController]
-public class BlobsController(IContainerPathResolver containerPathResolver) : ControllerBase
-{
-
-    [HttpHead]
-    public IActionResult ContainerExists(string containerName)
-    {
-        try
-        {
-            var containerPath = containerPathResolver.GetContainerPath(containerName);
-
-            if (!Directory.Exists(containerPath) && containerName != "$logs" && containerName != "$blobchangefeed")
-            {
-                return NotFound();
-            }
-
-            Response.Headers["x-ms-version"] = "2023-11-03";
-            Response.Headers["Last-Modified"] = DateTime.UtcNow.ToString("R");
-            Response.Headers["ETag"] = $"\"{Guid.NewGuid()}\"";
-            Response.Headers["x-ms-lease-status"] = "unlocked";
-            Response.Headers["x-ms-lease-state"] = "available";
-
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return Problem($"Error checking container existence: {ex.Message}");
-        }
-    }
-
-
-    [HttpPut("{*blobName}")]
-    public async Task<IActionResult> UploadBlob(string containerName, string blobName)
-    {
-        blobName = FixBlobNameThatContainsIdenticalDirectoryAndFileName(blobName);
-
-        try
-        {
-            var containerPath = containerPathResolver.GetContainerPath(containerName);
-            var blobPath = Path.Combine(containerPath, ConvertToFileSystemPath(blobName));
-
-            // Create container if it doesn't exist
-            Directory.CreateDirectory(containerPath);
-
-            // Create directory for blob if needed
-            var blobDirectory = Path.GetDirectoryName(blobPath);
-            if (!string.IsNullOrEmpty(blobDirectory)) Directory.CreateDirectory(blobDirectory);
-
-            // Write blob content
-            await using var fileStream = new FileStream(blobPath, FileMode.Create, FileAccess.Write);
-            await Request.Body.CopyToAsync(fileStream);
-
-            var fileInfo = new FileInfo(blobPath);
-
-            Response.Headers["x-ms-version"] = "2023-11-03";
-            Response.Headers["x-ms-blob-type"] = "BlockBlob";
-            Response.Headers["Last-Modified"] = fileInfo.LastWriteTimeUtc.ToString("R");
-            Response.Headers["ETag"] = $"\"{Guid.NewGuid()}\"";
-            Response.Headers["Content-MD5"] = "";
-            Response.Headers["x-ms-request-server-encrypted"] = "false";
-
-            return StatusCode(201); // Created
-        }
-        catch (Exception ex)
-        {
-            return Problem($"Error uploading blob: {ex.Message}");
-        }
-    }
-
-
-    // I don't understand why, but the Azure storage explorer often sends requests with
-    // filename.pdf/filename.pdf when uploading, instead of just filename.pdf
-    private static string FixBlobNameThatContainsIdenticalDirectoryAndFileName(string blobName)
-    {
-        var parts = blobName.Split('/');
-        if (parts.Length == 2 && parts[0]==parts[1]) return parts[1];
-        return blobName;
-    }
-}
-*/

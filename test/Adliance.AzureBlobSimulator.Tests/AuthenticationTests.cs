@@ -48,15 +48,7 @@ public class AuthenticationTests(WebApplicationFactory<Program> factory) : IClas
             ["Storage:Accounts:0:Key"] = ""
         });
 
-        try
-        {
-            await client.GetAccountInfoAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(403, ex.Status);
-        }
+        await CustomAssert.RequestError(403, () => client.GetAccountInfoAsync());
     }
 
     [Fact]
@@ -68,15 +60,7 @@ public class AuthenticationTests(WebApplicationFactory<Program> factory) : IClas
             ["Storage:Accounts:0:Key"] = "Bby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
         });
 
-        try
-        {
-            await client.GetAccountInfoAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(403, ex.Status);
-        }
+        await CustomAssert.RequestError(403, () => client.GetAccountInfoAsync());
     }
 
     [Fact]
@@ -88,15 +72,7 @@ public class AuthenticationTests(WebApplicationFactory<Program> factory) : IClas
             ["Storage:Accounts:0:Key"] = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
         });
 
-        try
-        {
-            await client.GetAccountInfoAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(403, ex.Status);
-        }
+        await CustomAssert.RequestError(403, () => client.GetAccountInfoAsync());
     }
 
     [Fact]

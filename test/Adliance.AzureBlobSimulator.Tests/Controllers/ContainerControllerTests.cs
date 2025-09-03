@@ -10,15 +10,6 @@ public class ContainerControllerTests(WebApplicationFactory<Program> factory) : 
     {
         const string containerName = "new-test-container";
         var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
-
-        try
-        {
-            await containerClient.CreateIfNotExistsAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException)
-        {
-            // OK, should fail
-        }
+        await CustomAssert.RequestError(400, () => containerClient.CreateIfNotExistsAsync());
     }
 }

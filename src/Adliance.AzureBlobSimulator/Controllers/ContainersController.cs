@@ -1,12 +1,11 @@
 using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace Adliance.AzureBlobSimulator.Controllers;
 
 [ApiController]
-public class ContainersController(IOptions<StorageOptions> options, ContainerService containerService) : ControllerBase
+public class ContainersController(ContainerService containerService) : ControllerBase
 {
     [HttpGet("/")]
     public IActionResult HandleGetRequest([FromQuery] string comp, [FromQuery] string? restype)
@@ -33,7 +32,7 @@ public class ContainersController(IOptions<StorageOptions> options, ContainerSer
         {
             containers.Add(new Container(d.Value));
         }
-        
+
         var response = new ContainerEnumerationResults
         {
             ServiceEndpoint = $"{Request.Scheme}://{Request.Host}/",

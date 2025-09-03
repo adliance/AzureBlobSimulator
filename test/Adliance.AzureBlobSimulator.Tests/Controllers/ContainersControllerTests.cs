@@ -42,14 +42,6 @@ public class ContainersControllerTests(WebApplicationFactory<Program> factory) :
     [Fact]
     public async Task Will_Get_400_on_any_Unsupported_Request()
     {
-        try
-        {
-            await BlobServiceClient.GetStatisticsAsync();
-            Assert.Fail("Should have thrown.");
-        }
-        catch (RequestFailedException ex)
-        {
-            Assert.Equal(400, ex.Status);
-        }
+        await CustomAssert.RequestError(400, () => BlobServiceClient.GetStatisticsAsync());
     }
 }
