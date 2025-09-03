@@ -4,9 +4,14 @@ namespace Adliance.AzureBlobSimulator.Models;
 
 public class Container
 {
-    [XmlElement("Name")]
-    public string Name { get; set; } = string.Empty;
+    public Container() {}
 
-    [XmlElement("Properties")]
-    public ContainerProperties Properties { get; set; } = new();
+    public Container(string directoryPath)
+    {
+        Name = Path.GetFileName(directoryPath);
+        Properties = new ContainerProperties(directoryPath);
+    }
+
+    [XmlElement("Name")] public string Name { get; set; } = string.Empty;
+    [XmlElement("Properties")] public ContainerProperties Properties { get; set; } = new();
 }

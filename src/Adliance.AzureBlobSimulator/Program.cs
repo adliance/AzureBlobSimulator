@@ -7,11 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Configure Storage options
-builder.Services.Configure<StorageOptions>(
-    builder.Configuration.GetSection(StorageOptions.SectionName));
-
-// Register container path resolver service
-builder.Services.AddSingleton<IContainerPathResolver, ContainerPathResolver>();
+builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
+builder.Services.AddSingleton<ContainerService>();
 
 var app = builder.Build();
 

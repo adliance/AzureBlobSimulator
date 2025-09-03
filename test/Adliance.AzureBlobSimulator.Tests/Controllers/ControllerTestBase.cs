@@ -50,9 +50,6 @@ public abstract class ControllerTestBase : IClassFixture<WebApplicationFactory<P
 
     public virtual void Dispose()
     {
-        if (Directory.Exists(TestStoragePath))
-        {
-            Directory.Delete(TestStoragePath, true);
-        }
+        if (Directory.Exists(TestStoragePath)) Directory.Delete(TestStoragePath, true);
     }
 }

@@ -40,6 +40,7 @@ public class AzureStorageAuthenticationMiddleware
                 return;
             }
         }
+
         // Check for SharedKey authentication
         else if (HasSharedKeyAuth(request))
         {
@@ -97,22 +98,32 @@ public class AzureStorageAuthenticationMiddleware
             // Try all configured accounts for SAS validation
             foreach (var account in _storageAccounts)
             {
+                if (string.IsNullOrWhiteSpace(account.Key))
+                {
+                    _logger.LogWarning("No access key defined for account \"{AccountName}\", therefore we allow the request.", account.Name);
+                    return true;
+                }
+
                 var stringToSign = BuildSasStringToSign(request, sv, se, sp, account.Name);
                 var expectedSignature = CalculateHmacSha256(stringToSign, account.Key);
 
                 if (sig == expectedSignature)
                 {
-                    _logger.LogDebug("SAS token validated successfully for account: {AccountName}", account.Name);
+                    _logger.LogDebug("SAS token validated successfully for account \"{AccountName}\".", account.Name);
                     return true;
                 }
+
+                _logger.LogDebug("String to sign for account \"{AccountName}\" \"{StringToSign}\"", account.Name, stringToSign);
+                _logger.LogDebug("Expected signature: \"{Expected}\"", expectedSignature);
+                _logger.LogDebug("Provided signature: \"{Provided}\"", sig);
             }
 
-            _logger.LogWarning("SAS signature validation failed for all configured accounts");
+            _logger.LogWarning("SAS signature validation failed for all configured accounts.");
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating SAS token");
+            _logger.LogError(ex, "Error validating SAS token.");
             return false;
         }
     }
@@ -139,6 +150,12 @@ public class AzureStorageAuthenticationMiddleware
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(matchingAccount.Key))
+            {
+                _logger.LogWarning("No access key defined for account \"{AccountName}\", therefore we allow the request.", matchingAccount.Name);
+                return true;
+            }
+
             // Build string-to-sign
             var stringToSign = BuildSharedKeyStringToSign(request, accountName);
             var expectedSignature = CalculateHmacSha256(stringToSign, matchingAccount.Key);
@@ -146,21 +163,21 @@ public class AzureStorageAuthenticationMiddleware
             var result = providedSignature == expectedSignature;
             if (!result)
             {
-                _logger.LogWarning("SharedKey signature mismatch for account: {AccountName}", accountName);
+                _logger.LogWarning("SharedKey signature mismatch for account \"{AccountName}\".", accountName);
                 _logger.LogDebug("String to sign: {StringToSign}", stringToSign);
                 _logger.LogDebug("Expected signature: {Expected}", expectedSignature);
                 _logger.LogDebug("Provided signature: {Provided}", providedSignature);
             }
             else
             {
-                _logger.LogDebug("SharedKey validated successfully for account: {AccountName}", accountName);
+                _logger.LogInformation("SharedKey validated successfully for account \"{AccountName}\".", accountName);
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating SharedKey authentication");
+            _logger.LogError(ex, "Error validating SharedKey authentication.");
             return false;
         }
     }
