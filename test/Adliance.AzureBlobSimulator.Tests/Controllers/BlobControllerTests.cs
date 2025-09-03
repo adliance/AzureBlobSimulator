@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 
-public class BlobControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory, "blobs_tests_storage")
+public class BlobControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
     [Fact]
     public async Task Can_Get_Blob()

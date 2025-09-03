@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 
-public class BlobsControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory, "blobs_tests_storage")
+public class BlobsControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
     [Fact]
     public async Task Can_Get_Container_Properties()

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 
-public class ContainerControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory, "containers_tests_storage")
+public class ContainerControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
     [Fact]
     public async Task Cannot_Create_Containers()
