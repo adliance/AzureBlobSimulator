@@ -24,7 +24,7 @@ public class AzureStorageAuthenticationMiddleware
             throw new Exception("No storage accounts configured. Please configure at least one account in BlobStorage:Accounts array.");
         }
 
-        logger.LogDebug("Configured {AccountCount} storage accounts", storageAccounts.Count);
+        logger.LogDebug("Configured {AccountCount} storage accounts.", storageAccounts.Count);
     }
 
     public async Task InvokeAsync(HttpContext context)

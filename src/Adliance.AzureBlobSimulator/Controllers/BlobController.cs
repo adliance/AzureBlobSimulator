@@ -7,8 +7,30 @@ using Microsoft.AspNetCore.StaticFiles;
 namespace Adliance.AzureBlobSimulator.Controllers;
 
 [ApiController]
-public class BlobContainer(ContainerService containerService) : ControllerBase
+public class BlobController(ContainerService containerService) : ControllerBase
 {
+    [HttpPut("/{container}/{*blob}")]
+    public async Task<IActionResult> WriteBlob([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
+    {
+        var blobType = Request.Headers["x-ms-blob-type"].ToString();
+        if (!string.Equals(blobType, "BlockBlob", StringComparison.OrdinalIgnoreCase)) return BadRequest("Only BlockBlob uploads are supported.");
+
+        if (!containerService.DoesContainerExist(container)) return NotFound($"Container \"{container}\" not found.");
+
+        var containerPath = containerService.GetContainerPath(container);
+        var targetPath = Path.Combine(containerPath, blob);
+        await using var fs = new FileStream(targetPath, FileMode.Create, FileAccess.Write);
+        await Request.Body.CopyToAsync(fs);
+        await fs.FlushAsync();
+
+        var fileInfo = new FileInfo(targetPath);
+        Response.Headers["x-ms-version"] = Constants.MsVersion;
+        Response.Headers["ETag"] = Guid.NewGuid().ToString();
+        Response.Headers["Last-Modified"] = fileInfo.LastWriteTimeUtc.ToString("R");
+        Response.Headers["x-ms-request-server-encrypted"] = "false";
+        return StatusCode(201);
+    }
+
     [HttpGet("/{container}/{*blob}")]
     public IActionResult ReadBlob([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
     {

@@ -6,6 +6,33 @@ namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 public class BlobControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
     [Fact]
+    public async Task Can_Upload_Blob()
+    {
+        const string containerName = "upload-test-container";
+        const string blobName = "uploaded-file.txt";
+        var containerPath = Path.Combine(TestStoragePath, containerName);
+        Directory.CreateDirectory(containerPath);
+
+        var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        var content = BinaryData.FromString("Hello Upload!");
+        await blobClient.UploadAsync(content);
+
+        var download = await blobClient.DownloadContentAsync();
+        Assert.Equal("Hello Upload!", download.Value.Content.ToString());
+        Assert.True(File.Exists(Path.Combine(containerPath, blobName)));
+    }
+
+    [Fact]
+    public async Task Upload_To_NonExisting_Container_Should_Return_404()
+    {
+        const string containerName = "nonexisting-container";
+        var blobClient = BlobServiceClient.GetBlobContainerClient(containerName).GetBlobClient("file.txt");
+        await CustomAssert.RequestError(404, () => blobClient.UploadAsync(BinaryData.FromString("x")));
+    }
+
+    [Fact]
     public async Task Can_Get_Blob()
     {
         const string containerName = "test-container";
