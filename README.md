@@ -23,11 +23,12 @@ and all unit tests use this SDK.
 - List blobs in container
 - Get blob properties
 - Download blob
+- Upload blobs
 
 ## Unsupported operations
 The folloowing operations are not supported (yet), but it is planned to support them at some point in the future.
 - Create containers (maybe also delete containers)
-- Upload and delete blobs
+- Delete blobs
 - Support SAS-URLs for all supported operations
 
 Other operations may or may not be supported in the future.

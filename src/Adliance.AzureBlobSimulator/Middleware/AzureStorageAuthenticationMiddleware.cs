@@ -31,6 +31,13 @@ public class AzureStorageAuthenticationMiddleware
     {
         var request = context.Request;
 
+        // Allow unauthenticated health checks
+        if (request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         if (_sharedKeyAuthService.HasSharedKeyAuth(request))
         {
             if (!_sharedKeyAuthService.ValidateSharedKeyAuth(request))
