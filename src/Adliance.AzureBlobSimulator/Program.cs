@@ -1,3 +1,4 @@
+using Adliance.AzureBlobSimulator.Attributes;
 using Adliance.AzureBlobSimulator.Middleware;
 using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;
@@ -15,6 +16,12 @@ var app = builder.Build();
 app.UseMiddleware<AzureStorageAuthenticationMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
+app.MapGet("/health/{container}", ([ContainerName] string container, ContainerService containerService) =>
+{
+    if (string.IsNullOrWhiteSpace(container)) return Results.BadRequest("Container name is required.");
+    if (containerService.DoesContainerExist(container)) return Results.Ok("Container exists.");
+    return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+});
 app.Run();
 
 namespace Adliance.AzureBlobSimulator

@@ -25,6 +25,9 @@ and all unit tests use this SDK.
 - Download blob
 - Upload blobs
 
+In addition, health check endpoints `/health` and `/health/<container_name>` are available to check if the service 
+in general, and specific containers are available.
+
 ## Unsupported operations
 The folloowing operations are not supported (yet), but it is planned to support them at some point in the future.
 - Create containers (maybe also delete containers)
