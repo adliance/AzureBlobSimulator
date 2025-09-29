@@ -33,6 +33,7 @@ public class BlobsController(ContainerService containerService) : ControllerBase
                 Properties = new BlobProperties
                 {
                     LastModified = fileInfo.LastWriteTimeUtc.ToString("R"),
+                    Created = fileInfo.CreationTimeUtc.ToString("R"),
                     Etag = Guid.NewGuid().ToString(),
                     ContentLength = fileInfo.Length,
                     ContentType = contentTypeProvider.TryGetContentType(fileInfo.Name, out var contentType) ? contentType : "application/octet-stream",
