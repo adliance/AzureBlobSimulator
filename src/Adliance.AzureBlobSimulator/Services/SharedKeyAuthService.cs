@@ -98,7 +98,7 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
         var result = new StringBuilder();
         foreach (var header in canonicalizedHeaders)
         {
-            result.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"{header.Key}:{header.Value}");
+            result.Append(System.Globalization.CultureInfo.InvariantCulture, $"{header.Key}:{header.Value}\n");
         }
 
         return result.ToString();
@@ -108,18 +108,23 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
     {
         var resource = $"/{accountName}{request.Path}";
 
-        if (request.QueryString.HasValue)
+        if (!request.QueryString.HasValue)
         {
-            var queryParams = new SortedDictionary<string, string>();
+            return resource;
+        }
 
-            foreach (var param in request.Query)
-            {
-                var key = param.Key.ToLowerInvariant();
-                var value = string.Join(",", param.Value.ToArray());
-                queryParams[key] = value;
-            }
+        var queryParams = new SortedDictionary<string, string>();
 
-            foreach (var param in queryParams) resource += $"\n{param.Key}:{param.Value}";
+        foreach (var param in request.Query)
+        {
+            var key = param.Key.ToLowerInvariant();
+            var value = string.Join(",", param.Value.ToArray());
+            queryParams[key] = value;
+        }
+
+        foreach (var param in queryParams)
+        {
+            resource += $"\n{param.Key}:{param.Value}";
         }
 
         return resource;
