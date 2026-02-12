@@ -29,18 +29,18 @@ In addition, health check endpoints `/health` and `/health/<container_name>` are
 in general, and specific containers are available.
 
 ## Unsupported operations
-The folloowing operations are not supported (yet), but it is planned to support them at some point in the future.
+The following operations are not supported (yet), but it is planned to support them at some point in the future.
 - Create containers (maybe also delete containers)
 - Delete blobs
 - Support SAS-URLs for all supported operations
 
 Other operations may or may not be supported in the future.
 
-Also not supported (to keep it simple for now are):
+Also, not supported (to keep it simple for now are):
 - Blobs with hierarchical namespaces (e.g. `my-container/sub-container/blob.txt`)
 
 
-## Available as Docker image
+## Available as a Docker image
 
 `docker pull ghcr.io/adliance/azureblobsimulator:latest`
 
