@@ -4,16 +4,16 @@ using Adliance.AzureBlobSimulator.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace Adliance.AzureBlobSimulator.Tests;
+namespace Adliance.AzureBlobSimulator.Tests.SharedAccessSignature;
 
 public class SasValidatorServiceTests
 {
+    private readonly SasHelper _sasHelper;
     private readonly SasValidatorService _validator;
-    private readonly IOptions<StorageOptions> _options;
 
     public SasValidatorServiceTests()
     {
-        _options = Options.Create(new StorageOptions
+        var options = Options.Create(new StorageOptions
         {
             Accounts =
             [
@@ -26,33 +26,41 @@ public class SasValidatorServiceTests
         });
 
         var env = new TestHostEnvironment();
-        _validator = new SasValidatorService(_options, null, env);
+        _validator = new SasValidatorService(options, null, env);
+        _sasHelper = new SasHelper(options, _validator);
     }
 
+    /// <summary>
+    /// Validates that the SAS validator returns success for valid SAS tokens
+    /// with various HTTP methods and permissions.
+    /// </summary>
     [Theory]
     [InlineData("GET", "rl")]
     [InlineData("PUT", "wc")]
     [InlineData("DELETE", "d")]
     [InlineData("HEAD", "r")]
-    public void Validate_ValidSas_ReturnsSuccess(string method, string sp)
+    public void Validate_WithValidSas_ReturnsSuccess(string method, string sp)
     {
         const string sv = "2026-02-06";
         const string se = "2099-01-01T00:00:00Z";
         const string sr = "b";
-        var sig = GenerateSignature(sp, null, se, null, sv, sr);
+        var sig = _sasHelper.GenerateSignature(sp, null, se, null, sv, sr);
         var request = new DefaultHttpContext().Request;
         request.Path = "/testaccount/mycontainer/myblob.txt";
         request.QueryString = new QueryString($"?sv={sv}&sp={sp}&se={se}&sr={sr}&sig=" + Uri.EscapeDataString(sig));
         request.Method = method;
-        request.HttpContext.Items.Add("account", "testaccount"); // since middleware is not called, we set account manually
+        request.HttpContext.Items.Add("account", "testaccount"); // since middleware is not called, set the account manually
 
         var result = _validator.Validate(request);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
     }
 
+    /// <summary>
+    /// Validates that the SAS validator fails when an invalid SAS token is provided.
+    /// </summary>
     [Fact]
-    public void Validate_InvalidSas_ReturnsFail()
+    public void Validate_WithInvalidSas_ReturnsFailure()
     {
         var request = new DefaultHttpContext().Request;
         request.Path = "/blob/testaccount/mycontainer/myblob.txt";
@@ -64,8 +72,11 @@ public class SasValidatorServiceTests
         Assert.Equal("AuthenticationFailed", result.ErrorCode);
     }
 
+    /// <summary>
+    /// Ensures a SAS signature can be correctly generated for a container resource.
+    /// </summary>
     [Fact]
-    public void CanBuildSignatureForContainer()
+    public void GenerateSignature_ForContainer_ReturnsExpectedSignature()
     {
         const string sp = "rw";
         var st = new DateTime(2026, 02, 13).ToString("o");
@@ -74,12 +85,15 @@ public class SasValidatorServiceTests
         const string sv = "2026-02-06";
         const string sr = "c";
 
-        var sig = GenerateSignature(sp, st, se, spr, sv, sr);
+        var sig = _sasHelper.GenerateSignature(sp, st, se, spr, sv, sr);
         Assert.Equal("QK09Vp4+pLc0V985hU/SAJ2Sc1V9sXHkolOvWLljffE=", sig);
     }
 
+    /// <summary>
+    /// Ensures a SAS signature can be correctly generated for a blob resource.
+    /// </summary>
     [Fact]
-    public void CanBuildSignatureForBlob()
+    public void GenerateSignature_ForBlob_ReturnsExpectedSignature()
     {
         const string sp = "rw";
         var st = new DateTime(2026, 02, 13).ToString("o");
@@ -88,49 +102,29 @@ public class SasValidatorServiceTests
         const string sv = "2026-02-06";
         const string sr = "b";
 
-        var sig = GenerateSignature(sp, st, se, spr, sv, sr);
+        var sig = _sasHelper.GenerateSignature(sp, st, se, spr, sv, sr);
         Assert.Equal("E6EBdQjZ5lZwxlM/MgexEHrhFhQRIMxPPuKQLNfjJws=", sig);
     }
 
-    [Fact(Skip = "This test is only used to generate URL for manual testing")]
-    public void GenerateUrlForManualTesting()
+    /// <summary>
+    /// Generates a full SAS URL for manual testing and verifies the expected URL format.
+    /// </summary>
+    [Fact]
+    public void GenerateSasUrl_ForBlob_ReturnsExpectedUrl()
     {
         const string sp = "r";
         const string se = "2099-01-01T00:00:00.0000000Z";
         const string sv = "2026-02-06";
         const string sr = "b";
+        const string accountKey = "MTIzNDU2Nzg5MDEyMzQ1Ng==";
+        const string baseUrl = "http://localhost:10000/testaccount/mycontainer/myblob.txt";
 
-        var sig = GenerateSignature(sp, null, se, null, sv, sr, accountKey: "MTIzNDU2Nzg5MDEyMzQ1Ng==");
+        var sig = _sasHelper.GenerateSignature(sp, null, se, null, sv, sr, accountKey: accountKey);
         var escapedSig = Uri.EscapeDataString(sig);
+        var sasUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={escapedSig}";
 
-        var sasUrl = $"http://localhost:10000/testaccount/mycontainer/myblob.txt?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={escapedSig}";
-        _ = sasUrl;
-    }
-
-    private string GenerateSignature(string sp,
-        string? st,
-        string se,
-        string? spr,
-        string sv,
-        string sr, string? canonicalizedResource = null, string? accountKey = null)
-    {
-        const string canonicalizedResourceContainer = "/blob/testaccount/mycontainer"; // sr=c
-        const string canonicalizedResourceBlob = "/blob/testaccount/mycontainer/myblob.txt"; // sr=b
-
-        accountKey ??= _options.Value.Accounts.FirstOrDefault(a => a.Name.Equals("testaccount"))?.Key;
-        Assert.NotNull(accountKey);
-
-        switch (sr)
-        {
-            case "c":
-                return _validator.GenerateSignature(sp, st, se, canonicalizedResource ?? canonicalizedResourceContainer, spr, sv, sr, Convert.FromBase64String(accountKey));
-            case "b":
-                return _validator.GenerateSignature(sp, st, se, canonicalizedResource ?? canonicalizedResourceBlob, spr, sv, sr, Convert.FromBase64String(accountKey));
-            default:
-                Assert.Fail("Invalid sr value.");
-                break;
-        }
-
-        return "INVALID";
+        const string expectedSig = "En9zzpp9theXis59%2Fw%2FZ%2Fae%2FBJ15dn%2BEft3n2IOl2Ic%3D";
+        const string expectedUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={expectedSig}";
+        Assert.Equal(expectedUrl, sasUrl);
     }
 }
