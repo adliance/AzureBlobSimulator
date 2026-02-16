@@ -1,0 +1,42 @@
+﻿using Adliance.AzureBlobSimulator.Services;
+
+namespace Adliance.AzureBlobSimulator.Middleware;
+
+public class SasAuthenticationMiddleware(RequestDelegate next, SasValidatorService validator)
+{
+    public async Task Invoke(HttpContext context)
+    {
+        // Validate SAS token if present
+        if (context.Request.Query.ContainsKey("sig"))
+        {
+            // Extract the account from the first segment of the path
+            var pathSegments = context.Request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (pathSegments is { Length: >= 1 })
+            {
+                var account = pathSegments[0]; // first segment is the account
+                context.Items["account"] = account; // save it in HttpContext
+                context.Request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from path
+            }
+
+            var result = validator.Validate(context.Request);
+
+            if (!result.IsSuccess)
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/xml";
+
+                await context.Response.WriteAsync($"""
+                                                   <?xml version="1.0" encoding="utf-8"?>
+                                                   <Error>
+                                                     <Code>{result.ErrorCode}</Code>
+                                                     <Message>{result.ErrorMessage}</Message>
+                                                   </Error>
+                                                   """);
+                return;
+            }
+        }
+
+        await next(context);
+    }
+}

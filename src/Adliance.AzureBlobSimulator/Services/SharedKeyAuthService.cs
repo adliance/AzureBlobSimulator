@@ -18,7 +18,10 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
         var authValue = authHeader.Substring("SharedKey ".Length);
 
         var parts = authValue.Split(':', 2);
-        if (parts.Length != 2) return false;
+        if (parts.Length != 2)
+        {
+            return false;
+        }
 
         var accountName = parts[0];
         var providedSignature = parts[1];
