@@ -14,7 +14,7 @@ public class SasAuthenticationMiddleware(RequestDelegate next, SasValidatorServi
 
             if (pathSegments is { Length: >= 1 })
             {
-                var account = pathSegments[0]; // first segment is the account
+                var account = pathSegments[0]; // the first segment is the account
                 context.Items["account"] = account; // save it in HttpContext
                 context.Request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from path
             }
