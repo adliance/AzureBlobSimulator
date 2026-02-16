@@ -58,19 +58,40 @@ namespace Adliance.AzureBlobSimulator.Tests
                 Directory.Delete(storagePath, true);
         }
 
+        /// <summary>
+        /// Performs a full end-to-end test of the Azure Blob Simulator running in a Linux container:
+        /// 1. Verifies that the simulator container is running Linux.
+        /// 2. Ensures a blob container exists or creates it if missing.
+        /// 3. Uploads a text blob to the container.
+        /// 4. Downloads the same blob and verifies its content matches the uploaded data.
+        /// </summary>
+        /// <remarks>
+        /// This test validates that the simulator correctly handles fundamental blob storage operations
+        /// in a Linux environment, including container creation, blob upload, and blob download.
+        /// It also acts as a sanity check to ensure the test is running in a Linux container,
+        /// which is required for true Linux E2E testing.
+        /// </remarks>
         [Fact]
-        public async Task Upload_And_Download_Should_Work()
+        public async Task E2E_UploadAndDownloadBlob_ShouldSucceed()
         {
             var client = new BlobServiceClient(_connectionString);
 
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var execResult = await _simulatorContainer.ExecAsync(["uname", "-s"], ct: cts.Token);
+            Assert.Equal("Linux", execResult.Stdout.Trim());
+
             var accountFolder = Path.Combine(_storagePath, AccountName);
             if (!Directory.Exists(accountFolder))
+            {
                 Directory.CreateDirectory(accountFolder);
+            }
 
             const string containerName = "demo";
             var containerFolder = Path.Combine(accountFolder, containerName);
             if (!Directory.Exists(containerFolder))
+            {
                 Directory.CreateDirectory(containerFolder);
+            }
 
             var container = client.GetBlobContainerClient(containerName);
             var blob = container.GetBlockBlobClient("file.txt");
