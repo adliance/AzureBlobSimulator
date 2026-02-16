@@ -14,6 +14,13 @@ public sealed class SasValidatorService(
     private readonly StorageOptions _options = options.Value;
     private readonly bool _debugEnabled = environment.IsDevelopment();
 
+    /// <summary>
+    /// Validates the SAS (Shared Access Signature) of an incoming HTTP request.
+    /// Checks the signature, required parameters, start and expiry times,
+    /// canonicalized resource, and permission alignment with the HTTP method.
+    /// </summary>
+    /// <param name="request">The HTTP request containing SAS query parameters.</param>
+    /// <returns>A <see cref="SasValidationResult"/> indicating success or failure of validation.</returns>
     public SasValidationResult Validate(HttpRequest request)
     {
         var account = ResolveAccount(request);
@@ -105,6 +112,18 @@ public sealed class SasValidatorService(
         return SasValidationResult.Success();
     }
 
+    /// <summary>
+    /// Generates a SAS signature string based on provided SAS parameters and account key.
+    /// </summary>
+    /// <param name="sp">Permissions string (e.g., "rwd").</param>
+    /// <param name="st">Optional start time of SAS validity.</param>
+    /// <param name="se">Expiry time of SAS.</param>
+    /// <param name="canonicalizedResource">Canonicalized resource path.</param>
+    /// <param name="spr">Optional signed protocol (e.g., "https").</param>
+    /// <param name="sv">SAS version.</param>
+    /// <param name="sr">Resource type ("b" for blob, "c" for container).</param>
+    /// <param name="key">Account key as a byte array.</param>
+    /// <returns>The computed Base64-encoded signature string.</returns>
     public string GenerateSignature(string sp,
         string? st,
         string se,
@@ -118,6 +137,11 @@ public sealed class SasValidatorService(
         return ComputeSignature(sts, key);
     }
 
+    /// <summary>
+    /// Resolves the storage account from the HTTP request context.
+    /// </summary>
+    /// <param name="request">The incoming HTTP request.</param>
+    /// <returns>The matched <see cref="StorageAccountOptions"/> or null if not found.</returns>
     private StorageAccountOptions? ResolveAccount(HttpRequest request)
     {
         var possibleAccountName = request.HttpContext.Items["account"] as string;
@@ -133,6 +157,13 @@ public sealed class SasValidatorService(
         return account;
     }
 
+    /// <summary>
+    /// Builds the canonicalized resource string required for SAS signature computation.
+    /// </summary>
+    /// <param name="request">The HTTP request containing the resource path.</param>
+    /// <param name="accountName">The storage account name.</param>
+    /// <param name="sr">Resource type ("b" for blob, "c" for container).</param>
+    /// <returns>The canonicalized resource string or null if invalid.</returns>
     private static string? BuildCanonicalizedResource(HttpRequest request, string accountName, string sr)
     {
         var path = request.Path.Value;
@@ -176,6 +207,17 @@ public sealed class SasValidatorService(
         }
     }
 
+    /// <summary>
+    /// Constructs the string to sign for SAS authentication based on parameters.
+    /// </summary>
+    /// <param name="sp">Permissions string.</param>
+    /// <param name="st">Optional start time.</param>
+    /// <param name="se">Expiry time.</param>
+    /// <param name="canonicalizedResource">Canonicalized resource string.</param>
+    /// <param name="spr">Optional signed protocol.</param>
+    /// <param name="sv">SAS version.</param>
+    /// <param name="sr">Resource type.</param>
+    /// <returns>The string to sign.</returns>
     private static string BuildStringToSign(
         string sp,
         string? st,
@@ -205,6 +247,12 @@ public sealed class SasValidatorService(
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Computes the HMAC-SHA256 signature of a string using a given key.
+    /// </summary>
+    /// <param name="stringToSign">The string to compute the signature for.</param>
+    /// <param name="key">The key as a byte array.</param>
+    /// <returns>The Base64-encoded signature string.</returns>
     private static string ComputeSignature(string stringToSign, byte[] key)
     {
         using var hmac = new HMACSHA256(key);
@@ -212,6 +260,12 @@ public sealed class SasValidatorService(
         return Convert.ToBase64String(hash);
     }
 
+    /// <summary>
+    /// Compares two Base64-encoded signatures in a time-constant manner to prevent timing attacks.
+    /// </summary>
+    /// <param name="computed">The computed signature.</param>
+    /// <param name="provided">The signature provided in the request.</param>
+    /// <returns>True if the signatures match; otherwise, false.</returns>
     private static bool SignaturesEqual(string computed, string provided)
     {
         try
@@ -227,6 +281,12 @@ public sealed class SasValidatorService(
         }
     }
 
+    /// <summary>
+    /// Checks whether the HTTP method is allowed based on the SAS permissions string.
+    /// </summary>
+    /// <param name="method">The HTTP method of the request (GET, PUT, DELETE, HEAD).</param>
+    /// <param name="sp">The permissions string from the SAS.</param>
+    /// <returns>True if the method is allowed; otherwise, false.</returns>
     private static bool IsPermissionAllowed(string? method, string sp)
     {
         if (string.IsNullOrWhiteSpace(method))
@@ -252,6 +312,13 @@ public sealed class SasValidatorService(
         return method.Equals("HEAD", StringComparison.OrdinalIgnoreCase) && sp.Contains('r');
     }
 
+    /// <summary>
+    /// Attempts to retrieve a required query parameter from the HTTP request.
+    /// </summary>
+    /// <param name="query">The query collection.</param>
+    /// <param name="key">The key of the parameter to retrieve.</param>
+    /// <param name="value">Outputs the value if found.</param>
+    /// <returns>True if the parameter exists and has a value; otherwise, false.</returns>
     private static bool TryGetRequired(IQueryCollection query, string key, out string value)
     {
         if (query.TryGetValue(key, out var values) &&
@@ -265,6 +332,13 @@ public sealed class SasValidatorService(
         return false;
     }
 
+    /// <summary>
+    /// Attempts to retrieve an optional query parameter from the HTTP request.
+    /// </summary>
+    /// <param name="query">The query collection.</param>
+    /// <param name="key">The key of the parameter to retrieve.</param>
+    /// <param name="value">Outputs the value if found, or null if not present.</param>
+    /// <returns>True if the parameter exists and has a value; otherwise, false.</returns>
     private static bool TryGetOptional(IQueryCollection query, string key, out string? value)
     {
         if (query.TryGetValue(key, out var values) &&
@@ -278,6 +352,12 @@ public sealed class SasValidatorService(
         return false;
     }
 
+    /// <summary>
+    /// Escapes newline characters in a string for logging purposes.
+    /// Replaces '\r' with '\\r' and '\n' with '\\n\n'.
+    /// </summary>
+    /// <param name="input">The input string to escape.</param>
+    /// <returns>The escaped string suitable for logging.</returns>
     private static string EscapeNewlines(string input)
         => input.Replace("\r", "\\r").Replace("\n", "\\n\n");
 }

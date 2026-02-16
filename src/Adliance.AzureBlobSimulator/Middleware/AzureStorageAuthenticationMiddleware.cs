@@ -9,7 +9,10 @@ public class AzureStorageAuthenticationMiddleware
     private readonly RequestDelegate _next;
     private readonly SharedKeyAuthService _sharedKeyAuthService;
 
-    public AzureStorageAuthenticationMiddleware(RequestDelegate next, SharedKeyAuthService sharedKeyAuthService, IOptions<StorageOptions> blobStorageOptions,
+    public AzureStorageAuthenticationMiddleware(
+        RequestDelegate next,
+        SharedKeyAuthService sharedKeyAuthService,
+        IOptions<StorageOptions> blobStorageOptions,
         ILogger<AzureStorageAuthenticationMiddleware> logger)
     {
         _next = next;
