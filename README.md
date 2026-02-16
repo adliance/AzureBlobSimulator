@@ -12,18 +12,19 @@ work with local directories.
 For now, only "read" operations are supported, but it's planned to allow basic create/update operations
 (for example, create containers or upload blobs).
 
-Please note that the Azure Storage Manager is doing a lot of stuff under the hood, like using SAS-URLs for
-downloading blobs. This is not supported yet in this tool, but it supports the official `Azure.Storage.Blobs` SDK
-and all unit tests use this SDK.
+Please note that the Azure Storage Manager performs many operations behind the scenes. 
+While some features are not yet supported, the tool fully supports the official Azure.Storage.Blobs SDK, 
+and all unit tests rely on this SDK.
 
 ## Supported operations
 - Get account properties
 - List containers
 - Get container properties
-- List blobs in container
+- List blobs in a container
 - Get blob properties
 - Download blob
 - Upload blobs
+- Support SAS-URLs for all supported operations
 
 In addition, health check endpoints `/health` and `/health/<container_name>` are available to check if the service 
 in general, and specific containers are available.
@@ -32,7 +33,6 @@ in general, and specific containers are available.
 The following operations are not supported (yet), but it is planned to support them at some point in the future.
 - Create containers (maybe also delete containers)
 - Delete blobs
-- Support SAS-URLs for all supported operations
 
 Other operations may or may not be supported in the future.
 
