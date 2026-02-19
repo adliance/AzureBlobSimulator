@@ -97,6 +97,7 @@ public sealed class SasValidatorService(
                 computedSignature,
                 signature
             );
+            logger?.LogInformation("Path segments: {Segments}", string.Join("/", request.Path.Value.Split('/')));
         }
 
         if (!SignaturesEqual(computedSignature, signature))
@@ -168,40 +169,31 @@ public sealed class SasValidatorService(
     {
         var path = request.Path.Value;
         if (string.IsNullOrEmpty(path))
-        {
             return null;
-        }
 
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (segments.Length == 0)
-        {
             return null;
-        }
 
-        // Remove account-segment
+        // Remove account segment if present
         if (segments[0].Equals(accountName, StringComparison.OrdinalIgnoreCase))
-        {
             segments = segments.Skip(1).ToArray();
-        }
 
         if (segments.Length == 0)
-        {
             return null;
-        }
 
         var container = segments[0];
 
         switch (sr)
         {
-            case "c":
-                return $"/blob/{accountName}/{container}";
-            case "b" when segments.Length < 2:
-                return null;
-            case "b":
-            {
+            case "c": // container-level SAS
+                // Always return the container path only, ignore blob if any
+                return $"/{accountName}/{container}";
+            case "b": // blob-level SAS
+                if (segments.Length < 2)
+                    return null; // invalid blob path
                 var blobPath = string.Join("/", segments.Skip(1));
-                return $"/blob/{accountName}/{container}/{blobPath}";
-            }
+                return $"/{accountName}/{container}/{blobPath}";
             default:
                 return null;
         }
@@ -219,30 +211,38 @@ public sealed class SasValidatorService(
     /// <param name="sr">Resource type.</param>
     /// <returns>The string to sign.</returns>
     private static string BuildStringToSign(
-        string sp,
-        string? st,
-        string se,
+        string sp, // permissions
+        string? st, // start time (optional)
+        string se, // expiry time
         string canonicalizedResource,
-        string? spr,
-        string sv,
-        string sr)
+        string? spr, // signed protocol (optional)
+        string sv, // SAS version
+        string sr, // resource type
+        string? si = null, // signed identifier (optional)
+        string? sip = null, // signed IP (optional)
+        string? rscc = null,
+        string? rscd = null,
+        string? rsce = null,
+        string? rscl = null,
+        string? rsct = null
+    )
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine(sp); // permissions
-        sb.AppendLine(st ?? string.Empty); // start time
-        sb.AppendLine(se); // expiry time
-        sb.AppendLine(canonicalizedResource); // canonicalized resource
-        sb.AppendLine(string.Empty); // signed identifier (si)
-        sb.AppendLine(string.Empty); // IP (sip)
-        sb.AppendLine(spr ?? string.Empty); // signed protocol
-        sb.AppendLine(sv); // version
-        sb.AppendLine(sr); // resource (b/c)
-        sb.AppendLine(string.Empty); // rscc
-        sb.AppendLine(string.Empty); // rscd
-        sb.AppendLine(string.Empty); // rsce
-        sb.AppendLine(string.Empty); // rscl
-        sb.AppendLine(string.Empty); // rsct
+        sb.Append(sp).Append('\n');
+        sb.Append(st ?? string.Empty).Append('\n');
+        sb.Append(se).Append('\n');
+        sb.Append(canonicalizedResource).Append('\n');
+        sb.Append(si ?? string.Empty).Append('\n');
+        sb.Append(sip ?? string.Empty).Append('\n');
+        sb.Append(spr ?? string.Empty).Append('\n');
+        sb.Append(sv).Append('\n');
+        sb.Append(sr).Append('\n');
+        sb.Append(rscc ?? string.Empty).Append('\n');
+        sb.Append(rscd ?? string.Empty).Append('\n');
+        sb.Append(rsce ?? string.Empty).Append('\n');
+        sb.Append(rscl ?? string.Empty).Append('\n');
+        sb.Append(rsct ?? string.Empty); // no newline at the end
 
         return sb.ToString();
     }
@@ -256,7 +256,8 @@ public sealed class SasValidatorService(
     private static string ComputeSignature(string stringToSign, byte[] key)
     {
         using var hmac = new HMACSHA256(key);
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(stringToSign));
+        var stringBytes = Encoding.UTF8.GetBytes(stringToSign);
+        var hash = hmac.ComputeHash(stringBytes);
         return Convert.ToBase64String(hash);
     }
 

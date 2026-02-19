@@ -42,6 +42,11 @@ public class AzureStorageAuthenticationMiddleware
 
         if (_sharedKeyAuthService.HasSharedKeyAuth(request))
         {
+            var authHeader = request.Headers.Authorization.ToString();
+            var authValue = authHeader.Substring("SharedKey ".Length);
+            var accountName = authValue.Split(':', 2)[0];
+            context.Items.TryAdd("account", accountName);
+
             if (!_sharedKeyAuthService.ValidateSharedKeyAuth(request))
             {
                 await WriteAuthenticationError(context, "SharedKey authentication failed.");

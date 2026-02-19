@@ -47,6 +47,11 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
 
         if (providedSignature == expectedSignature)
         {
+            var pathSegments = request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (pathSegments is { Length: >= 1 } && pathSegments[0].Equals(accountName))
+            {
+                request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from path
+            }
             logger.LogDebug("SharedKey validated successfully for account \"{AccountName}\".", accountName);
             return true;
         }

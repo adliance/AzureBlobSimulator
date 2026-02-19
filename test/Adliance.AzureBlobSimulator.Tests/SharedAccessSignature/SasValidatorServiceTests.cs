@@ -127,4 +127,26 @@ public class SasValidatorServiceTests
         const string expectedUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={expectedSig}";
         Assert.Equal(expectedUrl, sasUrl);
     }
+
+    /// <summary>
+    /// Generates a full SAS URL for manual testing and verifies the expected URL format.
+    /// </summary>
+    [Fact]
+    public void GenerateSasUrl_ForContainer_ReturnsExpectedUrl()
+    {
+        const string sp = "r";
+        const string se = "2099-01-01T00:00:00.0000000Z";
+        const string sv = "2026-02-06";
+        const string sr = "c";
+        const string accountKey = "MTIzNDU2Nzg5MDEyMzQ1Ng==";
+        const string baseUrl = "http://localhost:10000/testaccount/mycontainer";
+
+        var sig = _sasHelper.GenerateSignature(sp, null, se, null, sv, sr, accountKey: accountKey);
+        var escapedSig = Uri.EscapeDataString(sig);
+        var sasUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={escapedSig}";
+
+        const string expectedSig = "HCKkjZ38VzAa3qQzvQjd6QzirQEvFhJzSJx4xHsFflU=";
+        const string expectedUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={expectedSig}";
+        Assert.Equal(expectedUrl, sasUrl);
+    }
 }

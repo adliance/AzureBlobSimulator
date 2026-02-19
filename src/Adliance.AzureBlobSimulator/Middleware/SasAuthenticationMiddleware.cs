@@ -1,4 +1,5 @@
-﻿using Adliance.AzureBlobSimulator.Services;
+﻿using System.Web;
+using Adliance.AzureBlobSimulator.Services;
 
 namespace Adliance.AzureBlobSimulator.Middleware;
 
@@ -9,8 +10,9 @@ public class SasAuthenticationMiddleware(RequestDelegate next, SasValidatorServi
         // Validate SAS token if present
         if (context.Request.Query.ContainsKey("sig"))
         {
+            var path = HttpUtility.UrlDecode(context.Request.Path.Value);
             // Extract the account from the first segment of the path
-            var pathSegments = context.Request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var pathSegments = path?.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (pathSegments is { Length: >= 1 })
             {
