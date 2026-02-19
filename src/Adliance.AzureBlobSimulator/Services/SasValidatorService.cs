@@ -75,7 +75,7 @@ public sealed class SasValidatorService(
             return SasValidationResult.Fail("AuthenticationFailed", "Invalid resource.");
         }
 
-        var stringToSign = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv, sr);
+        var stringToSign = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv);
 
         var computedSignature = ComputeSignature(stringToSign, accountKeyBytes);
 
@@ -97,7 +97,6 @@ public sealed class SasValidatorService(
                 computedSignature,
                 signature
             );
-            logger?.LogInformation("Path segments: {Segments}", string.Join("/", request.Path.Value.Split('/')));
         }
 
         if (!SignaturesEqual(computedSignature, signature))
@@ -134,7 +133,7 @@ public sealed class SasValidatorService(
         string sr,
         byte[] key)
     {
-        var sts = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv, sr);
+        var sts = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv);
         return ComputeSignature(sts, key);
     }
 
@@ -188,12 +187,12 @@ public sealed class SasValidatorService(
         {
             case "c": // container-level SAS
                 // Always return the container path only, ignore blob if any
-                return $"/{accountName}/{container}";
+                return $"/blob/{accountName}/{container}";
             case "b": // blob-level SAS
                 if (segments.Length < 2)
                     return null; // invalid blob path
                 var blobPath = string.Join("/", segments.Skip(1));
-                return $"/{accountName}/{container}/{blobPath}";
+                return $"/blob/{accountName}/{container}/{blobPath}";
             default:
                 return null;
         }
@@ -217,7 +216,6 @@ public sealed class SasValidatorService(
         string canonicalizedResource,
         string? spr, // signed protocol (optional)
         string sv, // SAS version
-        string sr, // resource type
         string? si = null, // signed identifier (optional)
         string? sip = null, // signed IP (optional)
         string? rscc = null,
@@ -237,7 +235,6 @@ public sealed class SasValidatorService(
         sb.Append(sip ?? string.Empty).Append('\n');
         sb.Append(spr ?? string.Empty).Append('\n');
         sb.Append(sv).Append('\n');
-        sb.Append(sr).Append('\n');
         sb.Append(rscc ?? string.Empty).Append('\n');
         sb.Append(rscd ?? string.Empty).Append('\n');
         sb.Append(rsce ?? string.Empty).Append('\n');
