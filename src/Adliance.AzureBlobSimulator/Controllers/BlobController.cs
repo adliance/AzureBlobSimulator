@@ -73,4 +73,23 @@ public class BlobController(ContainerService containerService) : ControllerBase
         Response.Headers["x-ms-server-encrypted"] = "false";
         return Ok();
     }
+
+    [HttpDelete("/{container}/{*blob}")]
+    public IActionResult DeleteBlob(
+        [FromRoute, ContainerName] string container,
+        [FromRoute, BlobName] string blob)
+    {
+        if (!containerService.DoesBlobExist(container, blob))
+            return NotFound($"Blob \"{container}/{blob}\" not found.");
+
+        var blobPath = containerService.GetBlobPath(container, blob);
+
+        System.IO.File.Delete(blobPath);
+
+        Response.Headers["x-ms-version"] = Constants.MsVersion;
+        Response.Headers["x-ms-delete-type-permanent"] = "true";
+        Response.Headers["x-ms-request-server-encrypted"] = "false";
+
+        return Accepted();
+    }
 }
