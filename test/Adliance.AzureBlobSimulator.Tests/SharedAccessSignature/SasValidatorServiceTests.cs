@@ -10,6 +10,7 @@ public class SasValidatorServiceTests
 {
     private readonly SasHelper _sasHelper;
     private readonly SasValidatorService _validator;
+    private readonly StorageOptions _options;
 
     public SasValidatorServiceTests()
     {
@@ -26,6 +27,7 @@ public class SasValidatorServiceTests
         });
 
         var env = new TestHostEnvironment();
+        _options = options.Value;
         _validator = new SasValidatorService(options, null, env);
         _sasHelper = new SasHelper(options, _validator);
     }
@@ -86,7 +88,7 @@ public class SasValidatorServiceTests
         const string sr = "c";
 
         var sig = _sasHelper.GenerateSignature(sp, st, se, spr, sv, sr);
-        Assert.Equal("QK09Vp4+pLc0V985hU/SAJ2Sc1V9sXHkolOvWLljffE=", sig);
+        Assert.Equal("HbojRpQMUBp2HvbJQhKA2HWKh2Hisp5uRs+qgiSK9FM=", sig);
     }
 
     /// <summary>
@@ -103,7 +105,7 @@ public class SasValidatorServiceTests
         const string sr = "b";
 
         var sig = _sasHelper.GenerateSignature(sp, st, se, spr, sv, sr);
-        Assert.Equal("E6EBdQjZ5lZwxlM/MgexEHrhFhQRIMxPPuKQLNfjJws=", sig);
+        Assert.Equal("z25U8zX7k1SRWaMS8WGo22xBYPsMl39foxYBtqpd4Xk=", sig);
     }
 
     /// <summary>
@@ -123,7 +125,7 @@ public class SasValidatorServiceTests
         var escapedSig = Uri.EscapeDataString(sig);
         var sasUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={escapedSig}";
 
-        const string expectedSig = "En9zzpp9theXis59%2Fw%2FZ%2Fae%2FBJ15dn%2BEft3n2IOl2Ic%3D";
+        const string expectedSig = "BuA0VB2lSXSsrfyhrfiCFqkxoyauEeWeLpWsizSw%2FgQ%3D";
         const string expectedUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={expectedSig}";
         Assert.Equal(expectedUrl, sasUrl);
     }
@@ -145,8 +147,37 @@ public class SasValidatorServiceTests
         var escapedSig = Uri.EscapeDataString(sig);
         var sasUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={escapedSig}";
 
-        const string expectedSig = "HCKkjZ38VzAa3qQzvQjd6QzirQEvFhJzSJx4xHsFflU=";
+        const string expectedSig = "d%2Fmvmf593lDiGL3XSOPXLcRh81H4amKkVnROj6gHyC4%3D";
         const string expectedUrl = $"{baseUrl}?sv={sv}&sp={sp}&se={se}&sr={sr}&sig={expectedSig}";
         Assert.Equal(expectedUrl, sasUrl);
+    }
+
+    /// <summary>
+    /// Generates a shared key connection string for manual testing with Microsoft Azure Storage Explorer.
+    /// </summary>
+    /// <remarks>
+    /// Constructs a connection string using the configured storage account name and key.
+    /// The storage account name is required in the BlobEndpoint to correctly generate
+    /// signatures for Microsoft Azure Storage Explorer’s internal SAS URLs
+    /// (e.g., http://localhost:10000/{accountName}).
+    /// </remarks>
+    [Fact]
+    public void GenerateSharedKeyConnectionString_ReturnsExpectedConnectionString()
+    {
+        const string protocol = "http";
+        const string domain = "localhost";
+        const string port = "10000";
+        var accountName = _options.Accounts.FirstOrDefault()?.Name; // replace it with your account name
+        var accountKey = _options.Accounts.FirstOrDefault()?.Key; // replace it with your account key
+
+        Assert.NotNull(accountName);
+        Assert.NotNull(accountKey);
+
+        var portSegment = string.IsNullOrWhiteSpace(port) ? string.Empty : $":{port}";
+        var blobEndpoint = $"{protocol}://{domain}{portSegment}/{accountName}";
+
+        const string expectedConnectionString = "AccountName=testaccount;AccountKey=MTIzNDU2Nzg5MDEyMzQ1Ng==;BlobEndpoint=http://localhost:10000/testaccount;DefaultEndpointsProtocol=http;";
+        var connectionString = $"AccountName={accountName};AccountKey={accountKey};BlobEndpoint={blobEndpoint};DefaultEndpointsProtocol={protocol};";
+        Assert.Equal(expectedConnectionString, connectionString);
     }
 }

@@ -7,7 +7,7 @@ namespace Adliance.AzureBlobSimulator.Services;
 
 public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions<StorageOptions> blobStorageOptions)
 {
-    public bool HasSharedKeyAuth(HttpRequest request)
+    public static bool HasSharedKeyAuth(HttpRequest request)
     {
         return request.Headers.Authorization.ToString().StartsWith("SharedKey ");
     }
@@ -15,7 +15,7 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
     public bool ValidateSharedKeyAuth(HttpRequest request)
     {
         var authHeader = request.Headers.Authorization.ToString();
-        var authValue = authHeader.Substring("SharedKey ".Length);
+        var authValue = authHeader["SharedKey ".Length..];
 
         var parts = authValue.Split(':', 2);
         if (parts.Length != 2)

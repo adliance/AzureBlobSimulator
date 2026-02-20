@@ -12,7 +12,6 @@ public sealed class SasValidatorService(
     IHostEnvironment environment)
 {
     private readonly StorageOptions _options = options.Value;
-    private readonly bool _debugEnabled = environment.IsDevelopment();
 
     /// <summary>
     /// Validates the SAS (Shared Access Signature) of an incoming HTTP request.
@@ -76,10 +75,9 @@ public sealed class SasValidatorService(
         }
 
         var stringToSign = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv);
-
         var computedSignature = ComputeSignature(stringToSign, accountKeyBytes);
 
-        if (_debugEnabled)
+        if (environment.IsDevelopment())
         {
             logger?.LogInformation(
                 """
@@ -121,7 +119,6 @@ public sealed class SasValidatorService(
     /// <param name="canonicalizedResource">Canonicalized resource path.</param>
     /// <param name="spr">Optional signed protocol (e.g., "https").</param>
     /// <param name="sv">SAS version.</param>
-    /// <param name="sr">Resource type ("b" for blob, "c" for container).</param>
     /// <param name="key">Account key as a byte array.</param>
     /// <returns>The computed Base64-encoded signature string.</returns>
     public string GenerateSignature(string sp,
@@ -130,7 +127,6 @@ public sealed class SasValidatorService(
         string canonicalizedResource,
         string? spr,
         string sv,
-        string sr,
         byte[] key)
     {
         var sts = BuildStringToSign(sp, st, se, canonicalizedResource, spr, sv);
@@ -168,29 +164,39 @@ public sealed class SasValidatorService(
     {
         var path = request.Path.Value;
         if (string.IsNullOrEmpty(path))
+        {
             return null;
+        }
 
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (segments.Length == 0)
+        {
             return null;
+        }
 
-        // Remove account segment if present
+        // Remove the account segment if present
         if (segments[0].Equals(accountName, StringComparison.OrdinalIgnoreCase))
+        {
             segments = segments.Skip(1).ToArray();
+        }
 
         if (segments.Length == 0)
+        {
             return null;
+        }
 
         var container = segments[0];
 
         switch (sr)
         {
             case "c": // container-level SAS
-                // Always return the container path only, ignore blob if any
                 return $"/blob/{accountName}/{container}";
             case "b": // blob-level SAS
                 if (segments.Length < 2)
+                {
                     return null; // invalid blob path
+                }
+
                 var blobPath = string.Join("/", segments.Skip(1));
                 return $"/blob/{accountName}/{container}/{blobPath}";
             default:
@@ -199,16 +205,32 @@ public sealed class SasValidatorService(
     }
 
     /// <summary>
-    /// Constructs the string to sign for SAS authentication based on parameters.
+    /// Builds the canonical string-to-sign used to generate a Shared Access Signature (SAS)
+    /// for Azure Blob Storage.
     /// </summary>
-    /// <param name="sp">Permissions string.</param>
-    /// <param name="st">Optional start time.</param>
-    /// <param name="se">Expiry time.</param>
-    /// <param name="canonicalizedResource">Canonicalized resource string.</param>
-    /// <param name="spr">Optional signed protocol.</param>
-    /// <param name="sv">SAS version.</param>
-    /// <param name="sr">Resource type.</param>
-    /// <returns>The string to sign.</returns>
+    /// <remarks>
+    /// The string is constructed in the exact order defined by the Azure Storage
+    /// service specification and must include newline separators between each field,
+    /// including empty values for optional parameters. The resulting string is later
+    /// hashed (HMAC-SHA256) with the storage account key to produce the <c>sig</c> value.
+    ///
+    /// All parameters must already be normalized and formatted according to the
+    /// expected SAS version.
+    /// </remarks>
+    /// <param name="sp">Signed permissions.</param>
+    /// <param name="st">Signed start time (optional).</param>
+    /// <param name="se">Signed expiry time.</param>
+    /// <param name="canonicalizedResource">Canonicalized resource path (e.g., /blob/{account}/{container}/{blob}).</param>
+    /// <param name="spr">Signed protocol (optional).</param>
+    /// <param name="sv">Signed service version.</param>
+    /// <param name="si">Signed identifier (optional).</param>
+    /// <param name="sip">Signed IP range (optional).</param>
+    /// <param name="rscc">Cache-Control response header override (optional).</param>
+    /// <param name="rscd">Content-Disposition response header override (optional).</param>
+    /// <param name="rsce">Content-Encoding response header override (optional).</param>
+    /// <param name="rscl">Content-Language response header override (optional).</param>
+    /// <param name="rsct">Content-Type response header override (optional).</param>
+    /// <returns>The fully constructed string-to-sign.</returns>
     private static string BuildStringToSign(
         string sp, // permissions
         string? st, // start time (optional)

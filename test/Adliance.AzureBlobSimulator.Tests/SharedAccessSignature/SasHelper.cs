@@ -25,6 +25,7 @@ public class SasHelper(IOptions<StorageOptions> options, SasValidatorService val
     /// <param name="sr">Resource type: "c" for container, "b" for blob.</param>
     /// <param name="canonicalizedResource">Optional canonicalized resource path.</param>
     /// <param name="accountKey">Optional account key; defaults to test account key.</param>
+    /// <param name="accountName">Optional account name; defaults to "testaccount".</param>
     /// <returns>The generated SAS token as a string.</returns>
     public string GenerateSignature(
         string sp,
@@ -32,19 +33,20 @@ public class SasHelper(IOptions<StorageOptions> options, SasValidatorService val
         string se,
         string? spr,
         string sv,
-        string sr, string? canonicalizedResource = null, string? accountKey = null)
+        string sr,
+        string? canonicalizedResource = null,
+        string? accountKey = null,
+        string accountName = "testaccount")
     {
-        accountKey ??= options.Value.Accounts.FirstOrDefault(a => a.Name.Equals("testaccount"))?.Key;
+        accountKey ??= options.Value.Accounts.FirstOrDefault(a => a.Name.Equals(accountName))?.Key;
         Assert.NotNull(accountKey);
 
         return sr switch
         {
             "c" => validator.GenerateSignature(
-                sp, st, se, canonicalizedResource ?? CanonicalizedResourceContainer, spr, sv, sr,
-                Convert.FromBase64String(accountKey)),
+                sp, st, se, canonicalizedResource ?? CanonicalizedResourceContainer, spr, sv, Convert.FromBase64String(accountKey)),
             "b" => validator.GenerateSignature(
-                sp, st, se, canonicalizedResource ?? CanonicalizedResourceBlob, spr, sv, sr,
-                Convert.FromBase64String(accountKey)),
+                sp, st, se, canonicalizedResource ?? CanonicalizedResourceBlob, spr, sv, Convert.FromBase64String(accountKey)),
             _ => throw new ArgumentException("Invalid sr value. Must be 'c' or 'b'.", nameof(sr))
         };
     }

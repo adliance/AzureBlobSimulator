@@ -11,14 +11,13 @@ public class SasAuthenticationMiddleware(RequestDelegate next, SasValidatorServi
         if (context.Request.Query.ContainsKey("sig"))
         {
             var path = HttpUtility.UrlDecode(context.Request.Path.Value);
-            // Extract the account from the first segment of the path
             var pathSegments = path?.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (pathSegments is { Length: >= 1 })
             {
                 var account = pathSegments[0]; // the first segment is the account
                 context.Items["account"] = account; // save it in HttpContext
-                context.Request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from path
+                context.Request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from the path
             }
 
             var result = validator.Validate(context.Request);

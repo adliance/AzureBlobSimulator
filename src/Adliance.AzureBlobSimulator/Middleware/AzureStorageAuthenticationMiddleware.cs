@@ -40,10 +40,10 @@ public class AzureStorageAuthenticationMiddleware
             return;
         }
 
-        if (_sharedKeyAuthService.HasSharedKeyAuth(request))
+        if (SharedKeyAuthService.HasSharedKeyAuth(request))
         {
             var authHeader = request.Headers.Authorization.ToString();
-            var authValue = authHeader.Substring("SharedKey ".Length);
+            var authValue = authHeader["SharedKey ".Length..];
             var accountName = authValue.Split(':', 2)[0];
             context.Items.TryAdd("account", accountName);
 
