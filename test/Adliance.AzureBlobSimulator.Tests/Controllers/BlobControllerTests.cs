@@ -84,7 +84,7 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
     {
         var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
         var blobClient = containerClient.GetBlobClient("test-blob");
-        await CustomAssert.RequestError(404, () => blobClient.DownloadContentAsync());
+        await CustomAssert.RequestError(404, blobClient.DownloadContentAsync);
     }
 
     [Fact]

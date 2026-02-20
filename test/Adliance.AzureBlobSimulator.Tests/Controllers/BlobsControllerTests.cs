@@ -1,5 +1,4 @@
 using System.Text;
-using Azure;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -69,7 +68,7 @@ public class BlobsControllerTests(WebApplicationFactory<Program> factory) : Cont
         {
             await foreach (var _ in containerClient.GetBlobsAsync())
             {
-               // do nothing here
+                // do nothing here
             }
         });
     }

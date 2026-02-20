@@ -4,7 +4,7 @@ namespace Adliance.AzureBlobSimulator.Models;
 
 public class BlobsCollection
 {
-    public BlobsCollection() {}
+    public BlobsCollection() { }
 
     public BlobsCollection(List<Blob> blobs)
     {

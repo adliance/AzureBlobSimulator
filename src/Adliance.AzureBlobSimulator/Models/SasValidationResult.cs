@@ -1,4 +1,4 @@
-﻿namespace Adliance.AzureBlobSimulator.Models;
+namespace Adliance.AzureBlobSimulator.Models;
 
 public sealed class SasValidationResult
 {

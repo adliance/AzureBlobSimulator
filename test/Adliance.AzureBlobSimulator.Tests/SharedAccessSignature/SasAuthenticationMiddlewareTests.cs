@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Adliance.AzureBlobSimulator.Middleware;
 using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;

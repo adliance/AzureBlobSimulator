@@ -1,4 +1,4 @@
-﻿using Adliance.AzureBlobSimulator.Models;
+using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;
 using Microsoft.Extensions.Options;
 

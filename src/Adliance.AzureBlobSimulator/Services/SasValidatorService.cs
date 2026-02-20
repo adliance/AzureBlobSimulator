@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using Adliance.AzureBlobSimulator.Models;
 using Microsoft.Extensions.Options;

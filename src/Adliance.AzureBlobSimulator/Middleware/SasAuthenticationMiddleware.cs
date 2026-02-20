@@ -1,4 +1,4 @@
-﻿using System.Web;
+using System.Web;
 using Adliance.AzureBlobSimulator.Services;
 
 namespace Adliance.AzureBlobSimulator.Middleware;
