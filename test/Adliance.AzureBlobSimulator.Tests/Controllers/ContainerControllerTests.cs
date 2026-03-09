@@ -1,4 +1,3 @@
-using Azure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;

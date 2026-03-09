@@ -7,7 +7,7 @@ namespace Adliance.AzureBlobSimulator.Services;
 
 public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions<StorageOptions> blobStorageOptions)
 {
-    public bool HasSharedKeyAuth(HttpRequest request)
+    public static bool HasSharedKeyAuth(HttpRequest request)
     {
         return request.Headers.Authorization.ToString().StartsWith("SharedKey ");
     }
@@ -15,10 +15,13 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
     public bool ValidateSharedKeyAuth(HttpRequest request)
     {
         var authHeader = request.Headers.Authorization.ToString();
-        var authValue = authHeader.Substring("SharedKey ".Length);
+        var authValue = authHeader["SharedKey ".Length..];
 
         var parts = authValue.Split(':', 2);
-        if (parts.Length != 2) return false;
+        if (parts.Length != 2)
+        {
+            return false;
+        }
 
         var accountName = parts[0];
         var providedSignature = parts[1];
@@ -44,6 +47,11 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
 
         if (providedSignature == expectedSignature)
         {
+            var pathSegments = request.Path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (pathSegments is { Length: >= 1 } && pathSegments[0].Equals(accountName))
+            {
+                request.Path = "/" + string.Join('/', pathSegments.Skip(1)); // remove account from path
+            }
             logger.LogDebug("SharedKey validated successfully for account \"{AccountName}\".", accountName);
             return true;
         }
@@ -98,7 +106,7 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
         var result = new StringBuilder();
         foreach (var header in canonicalizedHeaders)
         {
-            result.AppendLine(System.Globalization.CultureInfo.InvariantCulture, $"{header.Key}:{header.Value}");
+            result.Append(System.Globalization.CultureInfo.InvariantCulture, $"{header.Key}:{header.Value}\n");
         }
 
         return result.ToString();
@@ -108,18 +116,23 @@ public class SharedKeyAuthService(ILogger<SharedKeyAuthService> logger, IOptions
     {
         var resource = $"/{accountName}{request.Path}";
 
-        if (request.QueryString.HasValue)
+        if (!request.QueryString.HasValue)
         {
-            var queryParams = new SortedDictionary<string, string>();
+            return resource;
+        }
 
-            foreach (var param in request.Query)
-            {
-                var key = param.Key.ToLowerInvariant();
-                var value = string.Join(",", param.Value.ToArray());
-                queryParams[key] = value;
-            }
+        var queryParams = new SortedDictionary<string, string>();
 
-            foreach (var param in queryParams) resource += $"\n{param.Key}:{param.Value}";
+        foreach (var param in request.Query)
+        {
+            var key = param.Key.ToLowerInvariant();
+            var value = string.Join(",", param.Value.ToArray());
+            queryParams[key] = value;
+        }
+
+        foreach (var param in queryParams)
+        {
+            resource += $"\n{param.Key}:{param.Value}";
         }
 
         return resource;

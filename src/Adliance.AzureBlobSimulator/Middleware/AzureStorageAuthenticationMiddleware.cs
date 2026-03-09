@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Adliance.AzureBlobSimulator.Models;
 using Adliance.AzureBlobSimulator.Services;
 using Microsoft.Extensions.Options;
@@ -11,7 +9,11 @@ public class AzureStorageAuthenticationMiddleware
     private readonly RequestDelegate _next;
     private readonly SharedKeyAuthService _sharedKeyAuthService;
 
-    public AzureStorageAuthenticationMiddleware(RequestDelegate next, SharedKeyAuthService sharedKeyAuthService,  IOptions<StorageOptions> blobStorageOptions, ILogger<AzureStorageAuthenticationMiddleware> logger)
+    public AzureStorageAuthenticationMiddleware(
+        RequestDelegate next,
+        SharedKeyAuthService sharedKeyAuthService,
+        IOptions<StorageOptions> blobStorageOptions,
+        ILogger<AzureStorageAuthenticationMiddleware> logger)
     {
         _next = next;
         _sharedKeyAuthService = sharedKeyAuthService;
@@ -38,15 +40,20 @@ public class AzureStorageAuthenticationMiddleware
             return;
         }
 
-        if (_sharedKeyAuthService.HasSharedKeyAuth(request))
+        if (SharedKeyAuthService.HasSharedKeyAuth(request))
         {
+            var authHeader = request.Headers.Authorization.ToString();
+            var authValue = authHeader["SharedKey ".Length..];
+            var accountName = authValue.Split(':', 2)[0];
+            context.Items.TryAdd("account", accountName);
+
             if (!_sharedKeyAuthService.ValidateSharedKeyAuth(request))
             {
                 await WriteAuthenticationError(context, "SharedKey authentication failed.");
                 return;
             }
         }
-        else
+        else if (!request.Query.ContainsKey("sig"))
         {
             await WriteAuthenticationError(context, "Authentication is missing.", 401);
             return;

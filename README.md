@@ -9,38 +9,42 @@ This tool is not intended to provide a fully compatible emulator for Azure Stora
 for that), but it can be used to make certain "cloud native" applications (that require Azure Blobs)
 work with local directories.
 
-For now, only "read" operations are supported, but it's planned to allow basic create/update operations
-(for example, create containers or upload blobs).
+For now, containers support read operations only, while blobs support upload, download, delete, and list operations.
 
-Please note that the Azure Storage Manager is doing a lot of stuff under the hood, like using SAS-URLs for
-downloading blobs. This is not supported yet in this tool, but it supports the official `Azure.Storage.Blobs` SDK
-and all unit tests use this SDK.
+Please note that the Azure Storage Manager performs many operations behind the scenes. 
+While some features are not yet supported, the tool fully supports the official Azure.Storage.Blobs SDK, 
+and all unit tests rely on this SDK.
 
 ## Supported operations
 - Get account properties
 - List containers
 - Get container properties
-- List blobs in container
+- List blobs in a container
 - Get blob properties
 - Download blob
 - Upload blobs
+- Support SAS-URLs for all supported operations
 
 In addition, health check endpoints `/health` and `/health/<container_name>` are available to check if the service 
 in general, and specific containers are available.
 
 ## Unsupported operations
-The folloowing operations are not supported (yet), but it is planned to support them at some point in the future.
-- Create containers (maybe also delete containers)
-- Delete blobs
-- Support SAS-URLs for all supported operations
+The following operations are not supported (yet), but it is planned to support them at some point in the future.
+- Create containers
+- Delete containers
+- Account SAS
 
 Other operations may or may not be supported in the future.
 
-Also not supported (to keep it simple for now are):
+Also, not supported (to keep it simple for now are):
 - Blobs with hierarchical namespaces (e.g. `my-container/sub-container/blob.txt`)
 
+For now, authentication is supported only via Shared Key. Make sure to include the account name in the Blob Endpoint URL in the following format:
 
-## Available as Docker image
+`<protocol>://<domain or ip with port>/<account>`
+
+
+## Available as a Docker image
 
 `docker pull ghcr.io/adliance/azureblobsimulator:latest`
 

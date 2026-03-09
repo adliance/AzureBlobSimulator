@@ -1,5 +1,4 @@
 using System.Net;
-using Azure;
 using Azure.Core.Pipeline;
 using Azure.Storage;
 using Azure.Storage.Blobs;
@@ -15,7 +14,7 @@ public class AuthenticationTests(WebApplicationFactory<Program> factory) : IClas
     {
         var f = factory.WithWebHostBuilder(builder => { builder.ConfigureAppConfiguration((_, config) => { config.Sources.Clear(); }); });
 
-        Assert.Throws<Exception>(() => f.CreateClient());
+        Assert.Throws<Exception>(f.CreateClient);
     }
 
     [Fact]

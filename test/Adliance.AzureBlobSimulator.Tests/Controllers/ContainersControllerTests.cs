@@ -1,4 +1,3 @@
-using Azure;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 

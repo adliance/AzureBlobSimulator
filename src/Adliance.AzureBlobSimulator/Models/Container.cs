@@ -4,7 +4,7 @@ namespace Adliance.AzureBlobSimulator.Models;
 
 public class Container
 {
-    public Container() {}
+    public Container() { }
 
     public Container(string directoryPath)
     {

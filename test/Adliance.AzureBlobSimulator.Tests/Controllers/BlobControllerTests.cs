@@ -1,10 +1,24 @@
-using Azure;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 
 public class BlobControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
+    [Fact]
+    public async Task Can_Delete_Blob()
+    {
+        const string containerName = "upload-test-container";
+        const string blobName = "uploaded-file.txt";
+        var containerPath = Path.Combine(TestStoragePath, containerName);
+        await Can_Upload_Blob();
+        Assert.True(File.Exists(Path.Combine(containerPath, blobName)));
+
+        var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
+        var blobClient = containerClient.GetBlobClient(blobName);
+        await blobClient.DeleteAsync();
+        Assert.False(File.Exists(Path.Combine(containerPath, blobName)));
+    }
+
     [Fact]
     public async Task Can_Upload_Blob()
     {
@@ -70,7 +84,7 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
     {
         var containerClient = BlobServiceClient.GetBlobContainerClient("test-container");
         var blobClient = containerClient.GetBlobClient("test-blob");
-        await CustomAssert.RequestError(404, () => blobClient.DownloadContentAsync());
+        await CustomAssert.RequestError(404, blobClient.DownloadContentAsync);
     }
 
     [Fact]

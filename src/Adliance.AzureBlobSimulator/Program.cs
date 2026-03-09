@@ -6,14 +6,18 @@ using Adliance.AzureBlobSimulator.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
 builder.Services.AddSingleton<ContainerService>();
+builder.Services.AddTransient<SasValidatorService>();
 builder.Services.AddTransient<SharedKeyAuthService>();
+builder.Services.AddLogging();
 
 // Controllers and health checks
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+app.UseMiddleware<SasAuthenticationMiddleware>();
 app.UseMiddleware<AzureStorageAuthenticationMiddleware>();
+app.UseRouting();
 app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapGet("/health/{container}", ([ContainerName] string container, ContainerService containerService) =>
