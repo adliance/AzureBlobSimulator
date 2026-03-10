@@ -70,7 +70,6 @@ public class BlobControllerTests(WebApplicationFactory<Program> factory) : Contr
         var containerPath = Path.Combine(TestStoragePath, containerName);
         Directory.CreateDirectory(containerPath);
         await File.WriteAllBytesAsync(Path.Combine(containerPath, blobName), "Hello World!"u8.ToArray());
-        ;
 
         var containerClient = BlobServiceClient.GetBlobContainerClient(containerName);
         var blobClient = containerClient.GetBlobClient(blobName);

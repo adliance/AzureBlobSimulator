@@ -97,9 +97,9 @@ public class BlobSimulatorE2ETests : IAsyncLifetime
         var blob = container.GetBlockBlobClient("file.txt");
         const string txt = "This is a E2E test file which should be uploaded and downloaded by the simulator.";
         using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(txt));
-        await blob.UploadAsync(stream);
+        await blob.UploadAsync(stream, cancellationToken: cts.Token);
 
-        var result = await blob.DownloadContentAsync();
+        var result = await blob.DownloadContentAsync(cts.Token);
         Assert.Equal(txt, result.Value.Content.ToString());
     }
 }
