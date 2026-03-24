@@ -44,7 +44,7 @@ public class ContainerService(IOptions<StorageOptions> options)
         {
             foreach (var d in Directory.GetDirectories(options.Value.LocalPath))
             {
-                result.Add(Path.GetFileName(d), d);
+                result[Path.GetFileName(d)] = d;
             }
         }
 
