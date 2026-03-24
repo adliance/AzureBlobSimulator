@@ -1,14 +1,20 @@
+using System.Globalization;
 using System.Net;
+using Adliance.AzureBlobSimulator.Models;
+using Adliance.AzureBlobSimulator.Services;
+using Adliance.AzureBlobSimulator.Tests.SharedAccessSignature;
+using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Specialized;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Microsoft.Extensions.Options;
 
 namespace Adliance.AzureBlobSimulator.Tests;
 
 public class BlobSimulatorE2ETests : IAsyncLifetime
 {
-    private IContainer _simulatorContainer;
+    private IContainer _simulatorContainer = null!;
     private string? _connectionString;
     private readonly string _storagePath = Path.Combine(Path.GetTempPath(), "e2e-storage");
     private const string AccountName = "devstoreaccount1";
@@ -145,5 +151,72 @@ public class BlobSimulatorE2ETests : IAsyncLifetime
         using var streamReader = new StreamReader(resultStream);
         var result = await streamReader.ReadToEndAsync(cancellationToken: cts.Token);
         Assert.Equal(txt, result);
+    }
+
+    /// <summary>
+    /// Performs a full end-to-end test of the Azure Blob Simulator running in a Linux container:
+    /// 1. Verifies that the simulator container is running Linux.
+    /// 2. Ensures a blob container exists.
+    /// 3. Uploads a text blob to the container.
+    /// 4. Downloads the same blob and verifies its content matches the uploaded data.
+    /// </summary>
+    /// <remarks>
+    /// This test validates that the simulator correctly handles fundamental blob storage operations
+    /// in a Linux environment, including SAS authentication, blob upload, and blob download.
+    /// It also acts as a sanity check to ensure the test is running in a Linux container,
+    /// which is required for true Linux E2E testing.
+    /// </remarks>
+    [Fact]
+    public async Task E2E_UploadAndDownloadBlobUsingSasAuth_ShouldSucceed()
+    {
+        const string blobName = "file.txt";
+
+        var env = new TestHostEnvironment();
+        var options = new OptionsWrapper<StorageOptions>(new StorageOptions
+        {
+            Accounts = [new StorageAccountOptions { Name = AccountName, Key = AccountKey }]
+        });
+        var validator = new SasValidatorService(options, null, env);
+        var sasHelper = new SasHelper(options, validator);
+
+        // read, list, write
+        const string sp = "rlw";
+        // blob
+        const string sr = "b";
+        // expiry date
+        var se = DateTimeOffset.UtcNow.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+        var sv = Constants.MsVersion;
+
+        // Generate a signature for our test file we want to upload and download.
+        // Can't be static, because the expiry date is included in the signature.
+        var sig = sasHelper.GenerateSignature(sp, null, se, null, sv, sr, canonicalizedResource: $"/blob/{AccountName}/{ContainerName}/{blobName}", accountName: AccountName);
+
+        var credentials = new AzureSasCredential($"sv={sv}&sp={sp}&se={se}&sr={sr}&sig={Uri.EscapeDataString(sig)}");
+
+        var port = _simulatorContainer.GetMappedPublicPort(80);
+
+        // For SAS authentication the account name is required to be the first segment in the URL for the authentication to work correctly.
+        var client = new BlobServiceClient(new Uri($"http://localhost:{port}/{AccountName}"), credentials);
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var execResult = await _simulatorContainer.ExecAsync(["uname", "-s"], ct: cts.Token);
+        Assert.Equal("Linux", execResult.Stdout.Trim());
+
+        var containerFolder = Path.Combine(_storagePath, ContainerName);
+        if (!Directory.Exists(containerFolder))
+        {
+            Directory.CreateDirectory(containerFolder);
+        }
+
+        // The container name is not correctly inserted into the URI when defined in the blob container client.
+        var container = client.GetBlobContainerClient("");
+        // Thus, the container name is prepended manually. Might be related to the used API version, which our simulator might not support.
+        var blob = container.GetBlockBlobClient($"{ContainerName}/{blobName}");
+        const string txt = "This is a E2E test file which should be uploaded and downloaded by the simulator.";
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(txt));
+        await blob.UploadAsync(stream, cancellationToken: cts.Token);
+
+        var result = await blob.DownloadContentAsync(cts.Token);
+        Assert.Equal(txt, result.Value.Content.ToString());
     }
 }
