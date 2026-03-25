@@ -34,7 +34,8 @@ public class AzureStorageAuthenticationMiddleware
         var request = context.Request;
 
         // Allow unauthenticated health checks
-        if (request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+        if (request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            || request.Path.StartsWithSegments("/version", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;
