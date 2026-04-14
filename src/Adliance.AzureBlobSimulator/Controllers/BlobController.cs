@@ -48,6 +48,10 @@ public class BlobController(ContainerService containerService) : ControllerBase
         Response.Headers["ETag"] = Guid.NewGuid().ToString();
         Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
 
+        // support custom ms range header, see https://learn.microsoft.com/en-us/rest/api/storageservices/get-blob?tabs=microsoft-entra-id#request
+        if (Request.Headers.TryGetValue("x-ms-range", out var requestedRange))
+            Request.Headers["Range"] = requestedRange;
+
         var fileStream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read);
         return File(fileStream, contentType, enableRangeProcessing: true);
     }

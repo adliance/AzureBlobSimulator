@@ -30,7 +30,7 @@ public class ContainersController(ContainerService containerService) : Controlle
 
         foreach (var d in containerService.GetContainers())
         {
-            containers.Add(new Container(d.Value));
+            containers.Add(new Container(d.Key));
         }
 
         var response = new ContainerEnumerationResults
