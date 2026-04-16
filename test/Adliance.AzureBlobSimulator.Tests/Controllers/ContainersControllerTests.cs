@@ -1,34 +1,72 @@
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace Adliance.AzureBlobSimulator.Tests.Controllers;
 
 public class ContainersControllerTests(WebApplicationFactory<Program> factory) : ControllerTestBase(factory)
 {
     [Fact]
-    public async Task Can_Get_List_of_Containers()
+    public async Task GetsContainerListSuccessfully()
     {
-        var containerNames = new[]
+        var containerNames = new Dictionary<string, string>
         {
-            "container1",
-            "container2",
-            "test-container"
+            //<ContainerName, ContainerFolderName>
+            { "container1", "folder1" },
+            { "container2", "folder2" },
+            { "test-container", "test-folder" }
         };
 
-        foreach (var containerName in containerNames)
+        foreach (var containerPath in containerNames.Values.Select(folder => Path.Combine(TestStoragePath, folder)))
         {
-            var containerPath = Path.Combine(TestStoragePath, containerName);
             Directory.CreateDirectory(containerPath);
         }
 
+        // create new factory to test different folder name and container name
+        var customFactory = Factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                //overwrite existing config for LocalPath to prevent autodetection
+                var dict = new Dictionary<string, string?>
+                {
+                    ["Storage:LocalPath"] = Path.Combine(TestStoragePath, "empty")
+                };
+
+                var i = 0;
+                foreach (var (name, folder) in containerNames)
+                {
+                    dict[$"Storage:Containers:{i}:Name"] = name;
+                    dict[$"Storage:Containers:{i}:LocalPath"] = Path.GetFullPath(Path.Combine(TestStoragePath, folder));
+                    i++;
+                }
+
+                config.AddInMemoryCollection(dict);
+            });
+        });
+
+        Directory.CreateDirectory(Path.Combine(TestStoragePath, "empty"));
+
+        var options = new Azure.Storage.Blobs.BlobClientOptions
+        {
+            Transport = new Azure.Core.Pipeline.HttpClientTransport(customFactory.CreateClient())
+        };
+        var client = new Azure.Storage.Blobs.BlobServiceClient(new Uri("http://localhost"), new Azure.Storage.StorageSharedKeyCredential(StorageAccountName, StorageAccountKey), options);
+
         var containers = new List<BlobContainerItem>();
-        await foreach (var container in BlobServiceClient.GetBlobContainersAsync()) containers.Add(container);
+        await foreach (var container in client.GetBlobContainersAsync())
+        {
+            containers.Add(container);
+        }
 
         Assert.NotEmpty(containers);
-        Assert.Equal(2 + containerNames.Length, containers.Count);
+        Assert.Equal(2 + containerNames.Count, containers.Count);
         Assert.Contains(containers, c => c.Name == "$logs");
         Assert.Contains(containers, c => c.Name == "$blobchangefeed");
-        foreach (var containerName in containerNames) Assert.Contains(containers, c => c.Name == containerName);
+        foreach (var (name, _) in containerNames)
+        {
+            Assert.Contains(containers, c => c.Name == name);
+        }
     }
 
     [Fact]
