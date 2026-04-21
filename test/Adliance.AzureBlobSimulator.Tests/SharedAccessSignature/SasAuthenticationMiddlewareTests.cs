@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Adliance.AzureBlobSimulator.Tests.SharedAccessSignature;
@@ -20,41 +21,47 @@ public class SasAuthenticationMiddlewareTests
 
     public SasAuthenticationMiddlewareTests()
     {
-        var builder = new WebHostBuilder()
-            .ConfigureServices(services =>
+        var host = new HostBuilder()
+            .ConfigureWebHost(webBuilder =>
             {
-                services.Configure<StorageOptions>(options =>
-                {
-                    options.Accounts =
-                    [
-                        new StorageAccountOptions
+                webBuilder
+                    .UseTestServer()
+                    .ConfigureServices(services =>
+                    {
+                        services.Configure<StorageOptions>(options =>
                         {
-                            Name = "testaccount",
-                            Key = Convert.ToBase64String(
-                                Encoding.UTF8.GetBytes("1234567890123456"))
-                        }
-                    ];
-                });
+                            options.Accounts =
+                            [
+                                new StorageAccountOptions
+                                {
+                                    Name = "testaccount",
+                                    Key = Convert.ToBase64String(
+                                        Encoding.UTF8.GetBytes("1234567890123456"))
+                                }
+                            ];
+                        });
 
-                services.AddSingleton<SasValidatorService>();
+                        services.AddSingleton<SasValidatorService>();
+                    })
+                    .Configure(app =>
+                    {
+                        app.UseMiddleware<SasAuthenticationMiddleware>();
+
+                        app.Run(context =>
+                        {
+                            context.Response.StatusCode = 200;
+                            return Task.CompletedTask;
+                        });
+                    });
             })
-            .Configure(app =>
-            {
-                app.UseMiddleware<SasAuthenticationMiddleware>();
+            .Start();
 
-                app.Run(context =>
-                {
-                    context.Response.StatusCode = 200;
-                    return Task.CompletedTask;
-                });
-            });
+        _client = host.GetTestClient();
 
-        var server = new TestServer(builder);
-        _client = server.CreateClient();
-
+        var options = host.Services.GetRequiredService<IOptions<StorageOptions>>();
         var env = new TestHostEnvironment();
-        var options = server.Services.GetRequiredService<IOptions<StorageOptions>>();
         var validator = new SasValidatorService(options, null, env);
+
         _sasHelper = new SasHelper(options, validator);
     }
 
