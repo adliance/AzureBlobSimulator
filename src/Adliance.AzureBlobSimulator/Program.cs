@@ -5,7 +5,7 @@ using Adliance.AzureBlobSimulator.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection(StorageOptions.SectionName));
-builder.Services.AddSingleton<ContainerService>();
+builder.Services.AddScoped<ContainerService>();
 builder.Services.AddTransient<SasValidatorService>();
 builder.Services.AddTransient<SharedKeyAuthService>();
 builder.Services.AddLogging();
