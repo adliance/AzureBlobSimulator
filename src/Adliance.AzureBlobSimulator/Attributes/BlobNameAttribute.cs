@@ -6,17 +6,36 @@ public class BlobNameAttribute : ValidationAttribute
 {
     public override bool IsValid(object? value)
     {
-        if (value is string valueAsString)
+        if (value is not string s)
         {
-            if (valueAsString.Length <= 0) return false;
-            if (valueAsString.Length > 1024) return false;
-            if (valueAsString.Contains('/')) return false;
-            if (valueAsString.Contains('\\')) return false;
-            if (valueAsString.Contains("..")) return false;
-
-            return true;
+            return false;
         }
 
-        return false;
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return false;
+        }
+
+        if (s.Length > 1024)
+        {
+            return false;
+        }
+
+        if (s.StartsWith('/') || s.StartsWith('\\'))
+        {
+            return false;
+        }
+
+        if (s.Contains("..", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (s.Contains('\\'))
+        {
+            return false;
+        }
+
+        return true;
     }
 }
