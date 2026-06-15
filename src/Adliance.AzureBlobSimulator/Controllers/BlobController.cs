@@ -52,58 +52,72 @@ public class BlobController(ContainerService containerService) : ControllerBase
     [HttpGet("/{container}/{*blob}")]
     public IActionResult ReadBlob([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
     {
-        var path = containerService.GetBlobPath(container, blob);
-
-        if (!System.IO.File.Exists(path))
+        try
         {
-            return NotFound($"Blob \"{container}/{blob}\" not found.");
+            var path = containerService.GetBlobPath(container, blob);
+
+            if (!System.IO.File.Exists(path))
+            {
+                return NotFound($"Blob \"{container}/{blob}\" not found.");
+            }
+
+            var fileInfo = new FileInfo(path);
+            var contentTypeProvider = new FileExtensionContentTypeProvider();
+            var contentType = contentTypeProvider.TryGetContentType(fileInfo.Name, out var c) ? c : "application/octet-stream";
+
+            Response.Headers["x-ms-version"] = Constants.MsVersion;
+            Response.Headers["x-ms-blob-type"] = "BlockBlob";
+            Response.Headers["x-ms-lease-status"] = "unlocked";
+            Response.Headers["x-ms-lease-state"] = "available";
+            Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
+            Response.Headers.ETag = containerService.GetBlobETag(container, blob);
+            Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
+
+            // // support custom ms range header, see https://learn.microsoft.com/en-us/rest/api/storageservices/get-blob?tabs=microsoft-entra-id#request
+            // if (Request.Headers.TryGetValue("x-ms-range", out var requestedRange))
+            //     Request.Headers.Range = requestedRange;
+
+            var fileStream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return File(fileStream, contentType, enableRangeProcessing: true);
         }
-
-        var fileInfo = new FileInfo(path);
-        var contentTypeProvider = new FileExtensionContentTypeProvider();
-        var contentType = contentTypeProvider.TryGetContentType(fileInfo.Name, out var c) ? c : "application/octet-stream";
-
-        Response.Headers["x-ms-version"] = Constants.MsVersion;
-        Response.Headers["x-ms-blob-type"] = "BlockBlob";
-        Response.Headers["x-ms-lease-status"] = "unlocked";
-        Response.Headers["x-ms-lease-state"] = "available";
-        Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
-        Response.Headers.ETag = containerService.GetBlobETag(container, blob);
-        Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
-
-        // // support custom ms range header, see https://learn.microsoft.com/en-us/rest/api/storageservices/get-blob?tabs=microsoft-entra-id#request
-        // if (Request.Headers.TryGetValue("x-ms-range", out var requestedRange))
-        //     Request.Headers.Range = requestedRange;
-
-        var fileStream = new FileStream(fileInfo.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return File(fileStream, contentType, enableRangeProcessing: true);
+        catch (DirectoryNotFoundException directoryNotFoundException)
+        {
+            return NotFound(directoryNotFoundException.Message);
+        }
     }
 
     [HttpHead("/{container}/{*blob}")]
     public IActionResult GetBlobProperties([FromRoute, ContainerName] string container, [FromRoute, BlobName] string blob)
     {
-        var path = containerService.GetBlobPath(container, blob);
-
-        if (!System.IO.File.Exists(path))
+        try
         {
-            return NotFound($"Blob \"{container}/{blob}\" not found.");
+            var path = containerService.GetBlobPath(container, blob);
+
+            if (!System.IO.File.Exists(path))
+            {
+                return NotFound($"Blob \"{container}/{blob}\" not found.");
+            }
+
+            var fileInfo = new FileInfo(path);
+            var contentTypeProvider = new FileExtensionContentTypeProvider();
+
+            var contentType = contentTypeProvider.TryGetContentType(fileInfo.FullName, out var detectedContentType) ? detectedContentType : "application/octet-stream";
+            Response.Headers["x-ms-version"] = Constants.MsVersion;
+            Response.Headers["x-ms-blob-type"] = "BlockBlob";
+            Response.Headers["x-ms-lease-status"] = "unlocked";
+            Response.Headers["x-ms-lease-state"] = "available";
+            Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
+            Response.Headers["x-ms-server-encrypted"] = "false";
+            Response.Headers.AcceptRanges = "bytes";
+            Response.Headers.ContentType = contentType;
+            Response.Headers.ETag = containerService.GetBlobETag(container, blob);
+            Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
+            return Ok();
         }
-
-        var fileInfo = new FileInfo(path);
-        var contentTypeProvider = new FileExtensionContentTypeProvider();
-
-        var contentType = contentTypeProvider.TryGetContentType(fileInfo.FullName, out var detectedContentType) ? detectedContentType : "application/octet-stream";
-        Response.Headers["x-ms-version"] = Constants.MsVersion;
-        Response.Headers["x-ms-blob-type"] = "BlockBlob";
-        Response.Headers["x-ms-lease-status"] = "unlocked";
-        Response.Headers["x-ms-lease-state"] = "available";
-        Response.Headers["Content-Length"] = fileInfo.Length.ToString(CultureInfo.InvariantCulture);
-        Response.Headers["x-ms-server-encrypted"] = "false";
-        Response.Headers.AcceptRanges = "bytes";
-        Response.Headers.ContentType = contentType;
-        Response.Headers.ETag = containerService.GetBlobETag(container, blob);
-        Response.Headers.LastModified = fileInfo.LastWriteTimeUtc.ToString("R");
-        return Ok();
+        catch (DirectoryNotFoundException directoryNotFoundException)
+        {
+            return NotFound(directoryNotFoundException.Message);
+        }
     }
 
     [HttpDelete("/{container}/{*blob}")]
