@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Adliance.AzureBlobSimulator.Controllers;
