@@ -166,7 +166,7 @@ public class ContainerService(IOptions<StorageOptions> options)
         {
             if (segment is "." or "..")
             {
-                throw new InvalidOperationException($"Invalid blob segment. Segment: {segment}.");
+                throw new InvalidOperationException($"Invalid blob segment. Segment: '{segment}'");
             }
 
             // optional: block weird control chars
