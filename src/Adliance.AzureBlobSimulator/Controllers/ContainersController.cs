@@ -9,11 +9,12 @@ public class ContainersController(ContainerService containerService) : Controlle
 {
     [HttpGet("/")]
     public IActionResult HandleGetRequest([FromQuery] string comp, [FromQuery] string? restype)
-    {
-        if (comp == "properties" && restype == "account") return GetAccountProperties();
-        if (comp == "list") return ListContainers();
-        return BadRequest("Unsupported operation on GET /.");
-    }
+        => comp switch
+        {
+            "properties" when restype == "account" => GetAccountProperties(),
+            "list" => ListContainers(),
+            _ => BadRequest("Unsupported operation on GET /.")
+        };
 
     private IActionResult GetAccountProperties()
     {
